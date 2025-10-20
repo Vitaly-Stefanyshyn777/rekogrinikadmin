@@ -46,7 +46,7 @@ export default function GalleryPage() {
 
       // Використовуємо публічний ендпоїнт локального бекенду для отримання фото звичайної галереї
       const response = await fetch(
-        `https://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/public/gallery/albums/general`,
+        `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/gallery/albums/general`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -101,7 +101,7 @@ export default function GalleryPage() {
       const token = localStorage.getItem("authToken");
 
       const response = await fetch(
-        `https://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/gallery/photos/${photoId}`,
+        `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/gallery/photos/${photoId}`,
         {
           method: "DELETE",
           headers: {
@@ -180,7 +180,7 @@ export default function GalleryPage() {
 
     try {
       const response = await fetch(
-        "https://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/upload/photo",
+        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/photo",
         {
           method: "POST",
           headers: {
