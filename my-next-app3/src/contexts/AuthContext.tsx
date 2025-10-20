@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         // Якщо токен валідний, встановлюємо користувача
         setUser({
-          id: 1,
+          id: "1",
           name: "Admin",
           email: "admin@example.com",
         });

@@ -68,7 +68,7 @@ export async function GET(
     };
 
     // Якщо це альбом "До і Після", створюємо пари
-    let pairs = [];
+    const pairs = [];
     let collections = [];
 
     if (albumType === "BEFORE_AFTER") {

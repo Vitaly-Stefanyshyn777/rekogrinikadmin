@@ -8,7 +8,7 @@ interface UploadState {
   preview: string | null;
   uploading: boolean;
   uploaded: boolean;
-  uploadedPhoto?: any;
+  uploadedPhoto?: Photo;
 }
 
 interface Photo {
@@ -26,7 +26,7 @@ interface Photo {
 }
 
 export default function GalleryPage() {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const [photo, setPhoto] = useState<UploadState>({
     file: null,
     preview: null,
@@ -34,7 +34,7 @@ export default function GalleryPage() {
     uploaded: false,
   });
 
-  const [albumId, setAlbumId] = useState("1"); // ID звичайного альбому
+  const [albumId] = useState("1"); // ID звичайного альбому
   const [uploadedPhotos, setUploadedPhotos] = useState<Photo[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
 
@@ -66,7 +66,7 @@ export default function GalleryPage() {
 
       // Додаємо всі фото з альбому
       if (data.photos && data.photos.length > 0) {
-        data.photos.forEach((photo: any) => {
+        data.photos.forEach((photo: Photo) => {
           allPhotos.push({
             id: photo.id,
             albumId: photo.albumId,
@@ -353,9 +353,9 @@ export default function GalleryPage() {
           </h3>
           <ul className="text-green-800 space-y-1">
             <li>• Виберіть файл для завантаження</li>
-            <li>• Натисніть "Завантажити" для завантаження фото</li>
+            <li>• Натисніть &quot;Завантажити&quot; для завантаження фото</li>
             <li>• Фото буде збережено в звичайну галерею</li>
-            <li>• Автоматична мітка "general" для фото</li>
+            <li>• Автоматична мітка &quot;general&quot; для фото</li>
             <li>• Можна завантажити скільки завгодно фото по одному</li>
             <li>• Після завантаження можна вибрати наступне фото</li>
           </ul>

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getAllPhotos } from "@/lib/photoStorage";
 
 // GET - отримати всі альбоми
-export async function GET(request: NextRequest) {
+export async function GET() {
   console.log("🌐 GET /api/v1/public/gallery/albums - Отримання всіх альбомів");
 
   try {
@@ -55,4 +55,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

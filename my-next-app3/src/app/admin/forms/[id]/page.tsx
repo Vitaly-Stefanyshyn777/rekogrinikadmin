@@ -3,11 +3,23 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+interface FormSubmission {
+  id: number;
+  email: string;
+  phone: string;
+  name: string;
+  address: string;
+  workType: string;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function FormDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
-  const [item, setItem] = useState<any>(null);
+  const [item, setItem] = useState<FormSubmission | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,8 +37,8 @@ export default function FormDetailsPage() {
         if (!res.ok) throw new Error("Не вдалося завантажити заявку");
         const data = await res.json();
         setItem(data);
-      } catch (e: any) {
-        setError(e.message || "Помилка завантаження");
+      } catch (e: unknown) {
+        setError((e as Error).message || "Помилка завантаження");
       } finally {
         setLoading(false);
       }
@@ -76,7 +88,7 @@ export default function FormDetailsPage() {
   );
 }
 
-function Field({ label, value }: { label: string; value: any }) {
+function Field({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
       <div className="text-sm font-medium text-gray-700 mb-1">{label}</div>

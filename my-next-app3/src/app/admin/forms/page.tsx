@@ -36,7 +36,7 @@ export default function FormsListPage() {
       // очікуємо або масив без обгортки, або {items: [...]} – нормалізуємо
       const list = Array.isArray(data) ? data : data.items || [];
       setItems(
-        list.map((i: any) => ({
+        list.map((i: FormItem) => ({
           id: i.id,
           email: i.email,
           phone: i.phone,
@@ -47,8 +47,8 @@ export default function FormsListPage() {
           createdAt: i.createdAt,
         }))
       );
-    } catch (e: any) {
-      setError(e.message || "Помилка завантаження");
+    } catch (e: unknown) {
+      setError((e as Error).message || "Помилка завантаження");
     } finally {
       setLoading(false);
     }

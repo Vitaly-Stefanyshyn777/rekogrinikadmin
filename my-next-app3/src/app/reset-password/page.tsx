@@ -28,8 +28,8 @@ export default function ResetPasswordPage() {
       if (!res.ok) throw new Error("Не вдалося надіслати лист на зміну паролю");
       setMessage("Код надіслано на вашу пошту. Введіть його нижче.");
       setStep("code");
-    } catch (e: any) {
-      setError(e.message || "Помилка запиту");
+    } catch (e: unknown) {
+      setError((e as Error).message || "Помилка запиту");
     } finally {
       setLoading(false);
     }
@@ -51,8 +51,8 @@ export default function ResetPasswordPage() {
       );
       if (!res.ok) throw new Error("Не вдалося встановити новий пароль");
       setMessage("Пароль змінено успішно. Тепер можна увійти.");
-    } catch (e: any) {
-      setError(e.message || "Помилка запиту");
+    } catch (e: unknown) {
+      setError((e as Error).message || "Помилка запиту");
     } finally {
       setLoading(false);
     }

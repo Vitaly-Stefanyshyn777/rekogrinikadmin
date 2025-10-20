@@ -8,7 +8,7 @@ interface UploadState {
   preview: string | null;
   uploading: boolean;
   uploaded: boolean;
-  uploadedPhoto?: any;
+  uploadedPhoto?: Photo;
 }
 
 interface Photo {
@@ -25,8 +25,24 @@ interface Photo {
   updatedAt: string;
 }
 
+interface Collection {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Pair {
+  id: number;
+  beforePhoto: Photo;
+  afterPhoto: Photo;
+  collectionId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function BeforeAfterPage() {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const [beforePhotos, setBeforePhotos] = useState<UploadState[]>([
     { file: null, preview: null, uploading: false, uploaded: false },
     { file: null, preview: null, uploading: false, uploaded: false },
@@ -39,11 +55,11 @@ export default function BeforeAfterPage() {
     { file: null, preview: null, uploading: false, uploaded: false },
   ]);
 
-  const [albumId, setAlbumId] = useState("3"); // ID альбому "До і Після"
+  const [albumId] = useState("3"); // ID альбому "До і Після"
   const [uploadedPhotos, setUploadedPhotos] = useState<Photo[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
-  const [collections, setCollections] = useState<any[]>([]);
-  const [pairs, setPairs] = useState<any[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [pairs, setPairs] = useState<Pair[]>([]);
 
   // Завантаження всіх фото
   const fetchPhotos = async () => {
@@ -82,7 +98,7 @@ export default function BeforeAfterPage() {
 
       // Додаємо всі фото з альбому
       if (data.photos && data.photos.length > 0) {
-        data.photos.forEach((photo: any) => {
+        data.photos.forEach((photo: Photo) => {
           allPhotos.push({
             id: photo.id,
             albumId: photo.albumId,
@@ -187,7 +203,8 @@ export default function BeforeAfterPage() {
 
         const pairsData = await pairsResponse.json();
         const pair = pairsData.pairs.find(
-          (p: any) => p.beforePhotoId === photoId || p.afterPhotoId === photoId
+          (p: Pair) =>
+            p.beforePhoto.id === photoId || p.afterPhoto.id === photoId
         );
 
         if (!pair) {
@@ -258,66 +275,6 @@ export default function BeforeAfterPage() {
     };
 
     input.click();
-  };
-
-  // Видалення всієї колекції
-  const deleteCollection = async () => {
-    if (
-      !confirm(
-        "Ви впевнені, що хочете видалити всю колекцію? Цю дію неможливо скасувати!"
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("authToken");
-
-      // Спочатку отримуємо інформацію про колекції
-      const response = await fetch(
-        `http://localhost:3002/api/v1/public/gallery/albums/before-after`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Помилка отримання даних про колекції");
-      }
-
-      const data = await response.json();
-
-      // Видаляємо всі колекції
-      if (data.collections && data.collections.length > 0) {
-        for (const collection of data.collections) {
-          const deleteResponse = await fetch(
-            `http://localhost:3002/api/v1/gallery/albums/${albumId}/collections/${collection.id}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (!deleteResponse.ok) {
-            console.warn(`Не вдалося видалити колекцію ${collection.id}`);
-          }
-        }
-      }
-
-      // Optimistic update: одразу очищаємо локальний стан
-      setUploadedPhotos([]);
-
-      // Примусово оновлюємо список без кешу
-      await fetchPhotos();
-      alert("Вся колекція успішно видалена!");
-    } catch (err) {
-      console.error("Помилка видалення колекції:", err);
-      alert(err instanceof Error ? err.message : "Помилка видалення колекції");
-    }
   };
 
   // Видалення конкретної колекції
@@ -426,11 +383,7 @@ export default function BeforeAfterPage() {
     }
   };
 
-  const uploadPhoto = async (
-    file: File,
-    tag: "before" | "after",
-    index: number
-  ) => {
+  const uploadPhoto = async (file: File, tag: "before" | "after") => {
     try {
       const authToken = localStorage.getItem("authToken");
       console.log("Токен з localStorage:", authToken);
@@ -475,85 +428,6 @@ export default function BeforeAfterPage() {
     }
   };
 
-  const handleUpload = async (type: "before" | "after", index: number) => {
-    console.log("🔄 Початок завантаження:", { type, index });
-    const photos = type === "before" ? beforePhotos : afterPhotos;
-    const photo = photos[index];
-
-    if (!photo.file) {
-      alert("Спочатку виберіть файл!");
-      return;
-    }
-
-    console.log("📁 Файл для завантаження:", photo.file.name);
-
-    // Позначаємо як завантажується
-    if (type === "before") {
-      setBeforePhotos((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, uploading: true } : p))
-      );
-    } else {
-      setAfterPhotos((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, uploading: true } : p))
-      );
-    }
-
-    const result = await uploadPhoto(photo.file, type, index);
-    console.log("📤 Результат завантаження:", result);
-
-    if (result) {
-      console.log("✅ Фото успішно завантажено!");
-      // Зберігаємо інформацію про завантажене фото
-      if (type === "before") {
-        setBeforePhotos((prev) =>
-          prev.map((p, i) =>
-            i === index
-              ? {
-                  file: null,
-                  preview: null,
-                  uploading: false,
-                  uploaded: true,
-                  uploadedPhoto: result,
-                }
-              : p
-          )
-        );
-      } else {
-        setAfterPhotos((prev) =>
-          prev.map((p, i) =>
-            i === index
-              ? {
-                  file: null,
-                  preview: null,
-                  uploading: false,
-                  uploaded: true,
-                  uploadedPhoto: result,
-                }
-              : p
-          )
-        );
-      }
-      // Оновлюємо список фото після завантаження
-      console.log("🔄 Оновлюємо список фото після завантаження...");
-      await fetchPhotos();
-      console.log("✅ Список фото оновлено!");
-      alert("Фото успішно завантажено!");
-    } else {
-      console.log("❌ Помилка завантаження фото!");
-      // Скидаємо стан завантаження при помилці
-      if (type === "before") {
-        setBeforePhotos((prev) =>
-          prev.map((p, i) => (i === index ? { ...p, uploading: false } : p))
-        );
-      } else {
-        setAfterPhotos((prev) =>
-          prev.map((p, i) => (i === index ? { ...p, uploading: false } : p))
-        );
-      }
-      alert("Помилка завантаження фото!");
-    }
-  };
-
   const uploadAllPhotos = async () => {
     console.log("🚀 Початок завантаження всіх фото...");
     const allBeforeFiles = beforePhotos.filter((photo) => photo.file);
@@ -577,7 +451,7 @@ export default function BeforeAfterPage() {
         console.log(
           `📤 Завантажуємо фото "До" ${i + 1}/${allBeforeFiles.length}`
         );
-        const result = await uploadPhoto(photo.file, "before", i);
+        const result = await uploadPhoto(photo.file, "before");
         if (result) {
           setBeforePhotos((prev) =>
             prev.map((p, idx) =>
@@ -604,7 +478,7 @@ export default function BeforeAfterPage() {
         console.log(
           `📤 Завантажуємо фото "Після" ${i + 1}/${allAfterFiles.length}`
         );
-        const result = await uploadPhoto(photo.file, "after", i);
+        const result = await uploadPhoto(photo.file, "after");
         if (result) {
           setAfterPhotos((prev) =>
             prev.map((p, idx) =>
@@ -724,7 +598,7 @@ export default function BeforeAfterPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Завантаження фото "До і Після"
+          Завантаження фото &quot;До і Після&quot;
         </h1>
 
         {/* Прибрано поле "ID альбому" зі сторінки */}
@@ -734,7 +608,7 @@ export default function BeforeAfterPage() {
           <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
             <div>
               <h2 className="text-xl font-bold text-gray-900">
-                Завантаження фото "До і Після"
+                Завантаження фото &quot;До і Після&quot;
               </h2>
               <p className="text-gray-600 mt-1">
                 Виберіть файли та завантажте їх на сервер
@@ -753,7 +627,7 @@ export default function BeforeAfterPage() {
           {/* Фото "До" */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Фото "До" (3 обов'язкові)
+              Фото &quot;До&quot; (3 обов&apos;язкові)
             </h2>
             <div className="space-y-6">
               {beforePhotos.map((photo, index) =>
@@ -765,7 +639,7 @@ export default function BeforeAfterPage() {
           {/* Фото "Після" */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Фото "Після" (3 обов'язкові)
+              Фото &quot;Після&quot; (3 обов&apos;язкові)
             </h2>
             <div className="space-y-6">
               {afterPhotos.map((photo, index) =>
@@ -860,78 +734,84 @@ export default function BeforeAfterPage() {
                         <div className="p-4 space-y-6">
                           {/* Верхній ряд: До */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {beforeRow.map((photo: any, index: number) => (
-                              <div
-                                key={`before-${photo.id}-${index}`}
-                                className="bg-white rounded-lg shadow overflow-hidden"
-                              >
-                                <div className="aspect-w-16 aspect-h-9">
-                                  <img
-                                    src={photo.url}
-                                    alt={photo.title || "before"}
-                                    className="w-full h-48 object-cover"
-                                  />
-                                </div>
-                                <div className="p-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                                      before
-                                    </span>
-                                    {photo.createdAt && (
-                                      <span className="text-xs text-gray-500">
-                                        {new Date(
-                                          photo.createdAt
-                                        ).toLocaleDateString("uk-UA")}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <button
-                                    onClick={() => changePhoto(photo.id)}
-                                    className="w-full bg-blue-600 text-white text-sm py-1 px-3 rounded hover:bg-blue-700"
+                            {beforeRow.map(
+                              (photo) =>
+                                photo && (
+                                  <div
+                                    key={`before-${photo.id}`}
+                                    className="bg-white rounded-lg shadow overflow-hidden"
                                   >
-                                    Змінити фото
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                                    <div className="aspect-w-16 aspect-h-9">
+                                      <img
+                                        src={photo.url}
+                                        alt={photo.title || "before"}
+                                        className="w-full h-48 object-cover"
+                                      />
+                                    </div>
+                                    <div className="p-4">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                          before
+                                        </span>
+                                        {photo.createdAt && (
+                                          <span className="text-xs text-gray-500">
+                                            {new Date(
+                                              photo.createdAt
+                                            ).toLocaleDateString("uk-UA")}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <button
+                                        onClick={() => changePhoto(photo.id)}
+                                        className="w-full bg-blue-600 text-white text-sm py-1 px-3 rounded hover:bg-blue-700"
+                                      >
+                                        Змінити фото
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
+                            )}
                           </div>
 
                           {/* Нижній ряд: Після */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {afterRow.map((photo: any, index: number) => (
-                              <div
-                                key={`after-${photo.id}-${index}`}
-                                className="bg-white rounded-lg shadow overflow-hidden"
-                              >
-                                <div className="aspect-w-16 aspect-h-9">
-                                  <img
-                                    src={photo.url}
-                                    alt={photo.title || "after"}
-                                    className="w-full h-48 object-cover"
-                                  />
-                                </div>
-                                <div className="p-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                      after
-                                    </span>
-                                    {photo.createdAt && (
-                                      <span className="text-xs text-gray-500">
-                                        {new Date(
-                                          photo.createdAt
-                                        ).toLocaleDateString("uk-UA")}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <button
-                                    onClick={() => changePhoto(photo.id)}
-                                    className="w-full bg-blue-600 text-white text-sm py-1 px-3 rounded hover:bg-blue-700"
+                            {afterRow.map(
+                              (photo) =>
+                                photo && (
+                                  <div
+                                    key={`after-${photo.id}`}
+                                    className="bg-white rounded-lg shadow overflow-hidden"
                                   >
-                                    Змінити фото
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                                    <div className="aspect-w-16 aspect-h-9">
+                                      <img
+                                        src={photo.url}
+                                        alt={photo.title || "after"}
+                                        className="w-full h-48 object-cover"
+                                      />
+                                    </div>
+                                    <div className="p-4">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                          after
+                                        </span>
+                                        {photo.createdAt && (
+                                          <span className="text-xs text-gray-500">
+                                            {new Date(
+                                              photo.createdAt
+                                            ).toLocaleDateString("uk-UA")}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <button
+                                        onClick={() => changePhoto(photo.id)}
+                                        className="w-full bg-blue-600 text-white text-sm py-1 px-3 rounded hover:bg-blue-700"
+                                      >
+                                        Змінити фото
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
+                            )}
                           </div>
                         </div>
                       </div>
@@ -986,11 +866,14 @@ export default function BeforeAfterPage() {
           <ul className="text-blue-800 space-y-1">
             <li>• Виберіть файл для кожного слота</li>
             {/* Прибрано інструкцію про індивідуальну кнопку завантаження */}
-            <li>• Обов'язково завантажте 3 фото "До" та 3 фото "Після"</li>
+            <li>
+              • Обов&apos;язково завантажте 3 фото &quot;До&quot; та 3 фото
+              &quot;Після&quot;
+            </li>
             <li>• Система автоматично створить пари після завантаження</li>
             <li>
-              • Використовуйте кнопку "Завантажити всі фото" для пакетного
-              завантаження
+              • Використовуйте кнопку &quot;Завантажити всі фото&quot; для
+              пакетного завантаження
             </li>
           </ul>
         </div>

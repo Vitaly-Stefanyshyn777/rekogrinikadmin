@@ -68,8 +68,8 @@ export default function AdminHeroPage() {
       if (!res.ok) throw new Error("Не вдалося зберегти Hero");
       await loadHero();
       alert("Hero збережено");
-    } catch (e: any) {
-      alert(e.message || "Помилка збереження");
+    } catch (e: unknown) {
+      alert((e as Error).message || "Помилка збереження");
     } finally {
       setSaving(false);
     }
@@ -89,8 +89,8 @@ export default function AdminHeroPage() {
       if (!res.ok) throw new Error("Не вдалося видалити Hero");
       setHero({ title: "", subtitle: "", backgroundImage: "" });
       alert("Hero видалено");
-    } catch (e: any) {
-      alert(e.message || "Помилка видалення");
+    } catch (e: unknown) {
+      alert((e as Error).message || "Помилка видалення");
     } finally {
       setSaving(false);
     }

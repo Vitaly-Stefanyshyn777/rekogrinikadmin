@@ -1,8 +1,22 @@
 // Глобальний масив для зберігання завантажених фото
-let uploadedPhotos: any[] = [];
+interface Photo {
+  id: number;
+  albumId: number;
+  url: string;
+  title: string;
+  description: string;
+  tag: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const uploadedPhotos: Photo[] = [];
 
 // Функція для додавання фото
-export function addPhoto(photo: any) {
+export function addPhoto(photo: Photo) {
   uploadedPhotos.push(photo);
   console.log(`📸 Додано нове фото: ${photo.fileName} (ID: ${photo.id})`);
 }
@@ -22,7 +36,7 @@ export function deletePhotoById(photoId: number) {
 }
 
 // Функція для оновлення фото за ID
-export function updatePhotoById(photoId: number, updates: Partial<any>) {
+export function updatePhotoById(photoId: number, updates: Partial<Photo>) {
   const photoIndex = uploadedPhotos.findIndex((photo) => photo.id === photoId);
   if (photoIndex === -1) {
     return null;
