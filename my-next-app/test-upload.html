@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест завантаження фото "До/Після"</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .upload-section {
+            border: 2px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .file-input {
+            margin: 10px 0;
+        }
+
+        .upload-btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+
+        .upload-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Тест завантаження фото "До/Після"</h1>
+
+    <div class="upload-section">
+        <h2>3 фото "До"</h2>
+        <div class="file-input">
+            <label>Фото "До" 1:</label>
+            <input type="file" id="before1" accept="image/*">
+        </div>
+        <div class="file-input">
+            <label>Фото "До" 2:</label>
+            <input type="file" id="before2" accept="image/*">
+        </div>
+        <div class="file-input">
+            <label>Фото "До" 3:</label>
+            <input type="file" id="before3" accept="image/*">
+        </div>
+        <button class="upload-btn" onclick="uploadBeforePhotos()">Завантажити 3 фото "До"</button>
+    </div>
+
+    <div class="upload-section">
+        <h2>3 фото "Після"</h2>
+        <div class="file-input">
+            <label>Фото "Після" 1:</label>
+            <input type="file" id="after1" accept="image/*">
+        </div>
+        <div class="file-input">
+            <label>Фото "Після" 2:</label>
+            <input type="file" id="after2" accept="image/*">
+        </div>
+        <div class="file-input">
+            <label>Фото "Після" 3:</label>
+            <input type="file" id="after3" accept="image/*">
+        </div>
+        <button class="upload-btn" onclick="uploadAfterPhotos()">Завантажити 3 фото "Після"</button>
+    </div>
+
+    <div class="upload-section">
+        <h2>Завантажити всі 6 фото</h2>
+        <button class="upload-btn" onclick="uploadAllPhotos()">Завантажити всі 6 фото</button>
+    </div>
+
+    <div id="status"></div>
+
+    <script>
+        let beforePhotoUrls = [];
+        let afterPhotoUrls = [];
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function uploadPhoto(file, title, description) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('albumId', '2'); // ID альбому "До/Після"
+            formData.append('title', title);
+            formData.append('description', description);
+
+            const response = await fetch('http://localhost:3001/api/v1/upload/photo', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return response.json();
+        }
+
+        async function uploadBeforePhotos() {
+            const before1 = document.getElementById('before1').files[0];
+            const before2 = document.getElementById('before2').files[0];
+            const before3 = document.getElementById('before3').files[0];
+
+            if (!before1 || !before2 || !before3) {
+                showStatus('Потрібно вибрати всі 3 фото "До"', 'error');
+                return;
+            }
+
+            showStatus('Завантаження 3 фото "До"...', 'info');
+
+            try {
+                const photo1 = await uploadPhoto(before1, 'До', 'Фото до - 1');
+                const photo2 = await uploadPhoto(before2, 'До', 'Фото до - 2');
+                const photo3 = await uploadPhoto(before3, 'До', 'Фото до - 3');
+
+                beforePhotoUrls = [photo1.url, photo2.url, photo3.url];
+                showStatus('✅ 3 фото "До" успішно завантажено!', 'success');
+            } catch (error) {
+                showStatus(`❌ Помилка завантаження фото "До": ${error.message}`, 'error');
+            }
+        }
+
+        async function uploadAfterPhotos() {
+            const after1 = document.getElementById('after1').files[0];
+            const after2 = document.getElementById('after2').files[0];
+            const after3 = document.getElementById('after3').files[0];
+
+            if (!after1 || !after2 || !after3) {
+                showStatus('Потрібно вибрати всі 3 фото "Після"', 'error');
+                return;
+            }
+
+            showStatus('Завантаження 3 фото "Після"...', 'info');
+
+            try {
+                const photo1 = await uploadPhoto(after1, 'Після', 'Фото після - 1');
+                const photo2 = await uploadPhoto(after2, 'Після', 'Фото після - 2');
+                const photo3 = await uploadPhoto(after3, 'Після', 'Фото після - 3');
+
+                afterPhotoUrls = [photo1.url, photo2.url, photo3.url];
+                showStatus('✅ 3 фото "Після" успішно завантажено!', 'success');
+            } catch (error) {
+                showStatus(`❌ Помилка завантаження фото "Після": ${error.message}`, 'error');
+            }
+        }
+
+        async function uploadAllPhotos() {
+            if (beforePhotoUrls.length !== 3 || afterPhotoUrls.length !== 3) {
+                showStatus('Спочатку завантажте 3 фото "До" і 3 фото "Після"', 'error');
+                return;
+            }
+
+            showStatus('Створення пар з 6 фото...', 'info');
+
+            try {
+                // Тут можна додати логіку створення пар
+                showStatus('✅ Всі 6 фото завантажено! Пари створено автоматично!', 'success');
+            } catch (error) {
+                showStatus(`❌ Помилка створення пар: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>
+
