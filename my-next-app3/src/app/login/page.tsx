@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -95,8 +96,14 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">Тестові дані вже заповнені</p>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Тестові дані вже заповнені</span>
+            <Link
+              href="/reset-password"
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Забули пароль?
+            </Link>
           </div>
         </form>
       </div>

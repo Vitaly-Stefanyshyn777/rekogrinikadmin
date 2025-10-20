@@ -39,9 +39,11 @@ export default function BeforeAfterPage() {
     { file: null, preview: null, uploading: false, uploaded: false },
   ]);
 
-  const [albumId, setAlbumId] = useState("2"); // ID альбому "До і Після"
+  const [albumId, setAlbumId] = useState("3"); // ID альбому "До і Після"
   const [uploadedPhotos, setUploadedPhotos] = useState<Photo[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [pairs, setPairs] = useState<any[]>([]);
 
   // Завантаження всіх фото
   const fetchPhotos = async () => {
@@ -50,20 +52,29 @@ export default function BeforeAfterPage() {
       const token = localStorage.getItem("authToken");
 
       // Використовуємо публічний ендпоїнт старого сервера для отримання фото альбому "До і Після"
-      const response = await fetch(
-        `http://localhost:3002/api/v1/public/gallery/albums/before-after`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const timestamp = Date.now();
+      const url = `http://localhost:3002/api/v1/public/gallery/albums/before-after?t=${timestamp}`;
+      console.log("🔍 Запитуємо дані з URL:", url);
+
+      const response = await fetch(url, {
+        // Забороняємо кеш, щоб одразу бачити актуальні зміни після видалення/заміни
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error("Помилка завантаження даних");
       }
 
       const data = await response.json();
+      console.log("🔍 Дані з API після запиту:", {
+        photos: data.photos?.length || 0,
+        collections: data.collections?.length || 0,
+        pairs: data.pairs?.length || 0,
+        rawData: data,
+      });
 
       // Обробляємо дані зі старого сервера
       // Створюємо масив всіх фото
@@ -88,7 +99,37 @@ export default function BeforeAfterPage() {
         });
       }
 
+      console.log(
+        "📸 Встановлюємо завантажені фото:",
+        allPhotos.length,
+        "фото"
+      );
       setUploadedPhotos(allPhotos);
+
+      // Зберігаємо колекції
+      console.log("🔍 Перевіряємо колекції з API:", {
+        hasCollections: !!data.collections,
+        collectionsLength: data.collections?.length || 0,
+        collectionsType: typeof data.collections,
+        rawCollections: data.collections,
+      });
+
+      if (data.collections && data.collections.length > 0) {
+        setCollections(data.collections);
+        console.log("📁 Колекції:", data.collections.length, data.collections);
+      } else {
+        setCollections([]);
+        console.log("📁 Колекції: 0");
+      }
+
+      // Зберігаємо пари для подальшого рендерингу по колекціях
+      if (data.pairs && Array.isArray(data.pairs)) {
+        setPairs(data.pairs);
+      } else {
+        setPairs([]);
+      }
+
+      console.log("✅ Стан оновлено!");
     } catch (err) {
       console.error("Помилка завантаження фото:", err);
     } finally {
@@ -96,17 +137,212 @@ export default function BeforeAfterPage() {
     }
   };
 
-  // Видалення фото
-  const deletePhoto = async (photoId: number) => {
-    if (!confirm("Ви впевнені, що хочете видалити це фото?")) {
+  // Зміна фото
+  const changePhoto = (photoId: number) => {
+    // Знаходимо фото за ID
+    const photo = uploadedPhotos.find((p) => p.id === photoId);
+    if (!photo) {
+      alert("Фото не знайдено!");
+      return;
+    }
+
+    // Створюємо input для вибору нового файлу
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      // Перевіряємо розмір файлу (максимум 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Розмір файлу не повинен перевищувати 10MB!");
+        return;
+      }
+
+      // Показуємо підтвердження
+      if (!confirm(`Замінити фото "${photo.title}" на нове?`)) {
+        return;
+      }
+
+      try {
+        console.log("🔄 Замінюємо фото:", photo.title);
+
+        const token = localStorage.getItem("authToken");
+
+        // Знаходимо пару, до якої належить це фото
+        const pairsResponse = await fetch(
+          `http://localhost:3002/api/v1/public/gallery/albums/before-after`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!pairsResponse.ok) {
+          throw new Error("Помилка отримання даних про пари");
+        }
+
+        const pairsData = await pairsResponse.json();
+        const pair = pairsData.pairs.find(
+          (p: any) => p.beforePhotoId === photoId || p.afterPhotoId === photoId
+        );
+
+        if (!pair) {
+          // Якщо пара не знайдена, створюємо нову пару
+          console.log("Пара не знайдена, створюємо нову...");
+
+          // Спочатку завантажуємо нове фото
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("albumId", albumId);
+          formData.append("title", photo.title);
+          formData.append("description", photo.description);
+          formData.append("tag", photo.tag);
+
+          const uploadResponse = await fetch(
+            "http://localhost:3002/api/v1/upload/photo",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: formData,
+            }
+          );
+
+          if (!uploadResponse.ok) {
+            throw new Error("Помилка завантаження нового фото");
+          }
+
+          const newPhoto = await uploadResponse.json();
+          console.log("Нове фото завантажено:", newPhoto);
+
+          // Оновлюємо список
+          await fetchPhotos();
+          alert("Фото успішно замінено!");
+          return;
+        }
+
+        // Визначаємо, яке фото замінюємо (до або після)
+        const isBeforePhoto = pair.beforePhotoId === photoId;
+        const endpoint = isBeforePhoto
+          ? `http://localhost:3002/api/v1/upload/pairs/${pair.id}/before`
+          : `http://localhost:3002/api/v1/upload/pairs/${pair.id}/after`;
+
+        // Замінюємо фото в парі
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const replaceResponse = await fetch(endpoint, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!replaceResponse.ok) {
+          throw new Error("Помилка заміни фото в парі");
+        }
+
+        // Оновлюємо список
+        await fetchPhotos();
+        alert("Фото успішно замінено!");
+      } catch (err) {
+        console.error("Помилка заміни фото:", err);
+        alert(err instanceof Error ? err.message : "Помилка заміни фото");
+      }
+    };
+
+    input.click();
+  };
+
+  // Видалення всієї колекції
+  const deleteCollection = async () => {
+    if (
+      !confirm(
+        "Ви впевнені, що хочете видалити всю колекцію? Цю дію неможливо скасувати!"
+      )
+    ) {
       return;
     }
 
     try {
       const token = localStorage.getItem("authToken");
 
+      // Спочатку отримуємо інформацію про колекції
       const response = await fetch(
-        `http://localhost:3002/api/v1/photos?id=${photoId}`,
+        `http://localhost:3002/api/v1/public/gallery/albums/before-after`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Помилка отримання даних про колекції");
+      }
+
+      const data = await response.json();
+
+      // Видаляємо всі колекції
+      if (data.collections && data.collections.length > 0) {
+        for (const collection of data.collections) {
+          const deleteResponse = await fetch(
+            `http://localhost:3002/api/v1/gallery/albums/${albumId}/collections/${collection.id}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (!deleteResponse.ok) {
+            console.warn(`Не вдалося видалити колекцію ${collection.id}`);
+          }
+        }
+      }
+
+      // Optimistic update: одразу очищаємо локальний стан
+      setUploadedPhotos([]);
+
+      // Примусово оновлюємо список без кешу
+      await fetchPhotos();
+      alert("Вся колекція успішно видалена!");
+    } catch (err) {
+      console.error("Помилка видалення колекції:", err);
+      alert(err instanceof Error ? err.message : "Помилка видалення колекції");
+    }
+  };
+
+  // Видалення конкретної колекції
+  const deleteSpecificCollection = async (collectionId: number) => {
+    if (
+      !confirm(
+        `Ви впевнені, що хочете видалити колекцію #${collectionId}? Цю дію неможливо скасувати!`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("authToken");
+
+      // Optimistic update: одразу видаляємо колекцію з локального стану
+      setCollections((prev) =>
+        prev.filter((collection) => collection.id !== collectionId)
+      );
+      console.log(
+        `🗑️ Optimistic update: видаляємо колекцію #${collectionId} зі стану`
+      );
+
+      const deleteResponse = await fetch(
+        `http://localhost:3002/api/v1/gallery/albums/${albumId}/collections/${collectionId}?deletePhotos=true`,
         {
           method: "DELETE",
           headers: {
@@ -115,15 +351,28 @@ export default function BeforeAfterPage() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Помилка видалення фото");
+      if (!deleteResponse.ok) {
+        // Якщо помилка, повертаємо колекцію назад
+        await fetchPhotos();
+        throw new Error(`Помилка видалення колекції #${collectionId}`);
       }
 
-      // Оновлюємо список після видалення
+      const result = await deleteResponse.json();
+      console.log(`Колекція #${collectionId} видалена:`, result);
+
+      // Примусово оновлюємо список для синхронізації з сервером
+      console.log("🔄 Оновлюємо дані після видалення колекції...");
+
+      // Очищаємо локальний стан перед оновленням
+      setUploadedPhotos([]);
+      setCollections([]);
+
       await fetchPhotos();
-      alert("Фото успішно видалено!");
+      console.log("✅ Дані оновлено після видалення колекції");
+      alert(`Колекція #${collectionId} успішно видалена!`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Помилка видалення");
+      console.error("Помилка видалення колекції:", err);
+      alert(err instanceof Error ? err.message : "Помилка видалення колекції");
     }
   };
 
@@ -132,6 +381,21 @@ export default function BeforeAfterPage() {
       fetchPhotos();
     }
   }, [user, albumId]);
+
+  // Логування змін в uploadedPhotos
+  useEffect(() => {
+    console.log("📊 uploadedPhotos змінився:", uploadedPhotos.length, "фото");
+  }, [uploadedPhotos]);
+
+  // Логування змін в collections
+  useEffect(() => {
+    console.log(
+      "📁 collections змінився:",
+      collections.length,
+      "колекцій",
+      collections
+    );
+  }, [collections]);
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -270,7 +534,9 @@ export default function BeforeAfterPage() {
         );
       }
       // Оновлюємо список фото після завантаження
+      console.log("🔄 Оновлюємо список фото після завантаження...");
       await fetchPhotos();
+      console.log("✅ Список фото оновлено!");
       alert("Фото успішно завантажено!");
     } else {
       console.log("❌ Помилка завантаження фото!");
@@ -289,8 +555,14 @@ export default function BeforeAfterPage() {
   };
 
   const uploadAllPhotos = async () => {
+    console.log("🚀 Початок завантаження всіх фото...");
     const allBeforeFiles = beforePhotos.filter((photo) => photo.file);
     const allAfterFiles = afterPhotos.filter((photo) => photo.file);
+
+    console.log("📁 Файли для завантаження:", {
+      before: allBeforeFiles.length,
+      after: allAfterFiles.length,
+    });
 
     if (allBeforeFiles.length === 0 && allAfterFiles.length === 0) {
       alert("Спочатку виберіть файли для завантаження!");
@@ -298,9 +570,13 @@ export default function BeforeAfterPage() {
     }
 
     // Завантажуємо всі фото "До"
+    console.log("📤 Завантажуємо фото 'До'...");
     for (let i = 0; i < allBeforeFiles.length; i++) {
       const photo = allBeforeFiles[i];
       if (photo.file) {
+        console.log(
+          `📤 Завантажуємо фото "До" ${i + 1}/${allBeforeFiles.length}`
+        );
         const result = await uploadPhoto(photo.file, "before", i);
         if (result) {
           setBeforePhotos((prev) =>
@@ -321,9 +597,13 @@ export default function BeforeAfterPage() {
     }
 
     // Завантажуємо всі фото "Після"
+    console.log("📤 Завантажуємо фото 'Після'...");
     for (let i = 0; i < allAfterFiles.length; i++) {
       const photo = allAfterFiles[i];
       if (photo.file) {
+        console.log(
+          `📤 Завантажуємо фото "Після" ${i + 1}/${allAfterFiles.length}`
+        );
         const result = await uploadPhoto(photo.file, "after", i);
         if (result) {
           setAfterPhotos((prev) =>
@@ -343,6 +623,21 @@ export default function BeforeAfterPage() {
       }
     }
 
+    // Оновлюємо список фото після завантаження всіх фото
+    console.log("🔄 Оновлюємо список після завантаження всіх фото...");
+    await fetchPhotos();
+    console.log("✅ Список фото оновлено після завантаження всіх фото!");
+    // Готуємо слоти для наступної колекції: очищаємо локальні стани слотів
+    setBeforePhotos([
+      { file: null, preview: null, uploading: false, uploaded: false },
+      { file: null, preview: null, uploading: false, uploaded: false },
+      { file: null, preview: null, uploading: false, uploaded: false },
+    ]);
+    setAfterPhotos([
+      { file: null, preview: null, uploading: false, uploaded: false },
+      { file: null, preview: null, uploading: false, uploaded: false },
+      { file: null, preview: null, uploading: false, uploaded: false },
+    ]);
     alert("Всі фото успішно завантажені!");
   };
 
@@ -357,75 +652,45 @@ export default function BeforeAfterPage() {
         {photo.uploading && (
           <span className="ml-2 text-blue-600">(Завантаження...)</span>
         )}
-        {photo.uploaded && (
-          <span className="ml-2 text-green-600">✓ Завантажено</span>
-        )}
+        {/* Прибрано індикатор "Завантажено" на вимогу */}
       </h3>
 
       {photo.uploaded && photo.uploadedPhoto ? (
         <div className="mb-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center mb-2">
-              <svg
-                className="w-5 h-5 text-green-600 mr-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-green-800 font-medium">
-                Фото завантажено
-              </span>
-            </div>
-            <p className="text-sm text-green-700">
-              Файл: {photo.uploadedPhoto.fileName}
-            </p>
-            <p className="text-sm text-green-700">
-              Розмір: {(photo.uploadedPhoto.fileSize / 1024 / 1024).toFixed(2)}{" "}
-              MB
-            </p>
-            <p className="text-sm text-green-700">
-              Тег: {photo.uploadedPhoto.tag}
-            </p>
-            <button
-              onClick={() => {
-                if (type === "before") {
-                  setBeforePhotos((prev) =>
-                    prev.map((p, i) =>
-                      i === index
-                        ? {
-                            file: null,
-                            preview: null,
-                            uploading: false,
-                            uploaded: false,
-                          }
-                        : p
-                    )
-                  );
-                } else {
-                  setAfterPhotos((prev) =>
-                    prev.map((p, i) =>
-                      i === index
-                        ? {
-                            file: null,
-                            preview: null,
-                            uploading: false,
-                            uploaded: false,
-                          }
-                        : p
-                    )
-                  );
-                }
-              }}
-              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-            >
-              Завантажити інше фото
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              if (type === "before") {
+                setBeforePhotos((prev) =>
+                  prev.map((p, i) =>
+                    i === index
+                      ? {
+                          file: null,
+                          preview: null,
+                          uploading: false,
+                          uploaded: false,
+                        }
+                      : p
+                  )
+                );
+              } else {
+                setAfterPhotos((prev) =>
+                  prev.map((p, i) =>
+                    i === index
+                      ? {
+                          file: null,
+                          preview: null,
+                          uploading: false,
+                          uploaded: false,
+                        }
+                      : p
+                  )
+                );
+              }
+            }}
+            className="mt-2 bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-2 rounded text-sm"
+          >
+            Завантажити інше фото
+          </button>
         </div>
       ) : (
         <>
@@ -449,17 +714,7 @@ export default function BeforeAfterPage() {
             </div>
           )}
 
-          <button
-            onClick={() => handleUpload(type, index)}
-            disabled={!photo.file || photo.uploading}
-            className={`w-full py-2 px-4 rounded-md font-medium ${
-              photo.file && !photo.uploading
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            {photo.uploading ? "Завантаження..." : "Завантажити"}
-          </button>
+          {/* Прибрано індивідуальну кнопку завантаження — залишаємо лише "Завантажити всі фото" */}
         </>
       )}
     </div>
@@ -472,22 +727,11 @@ export default function BeforeAfterPage() {
           Завантаження фото "До і Після"
         </h1>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            ID альбому:
-          </label>
-          <input
-            type="text"
-            value={albumId}
-            onChange={(e) => setAlbumId(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 w-32"
-            placeholder="2"
-          />
-        </div>
+        {/* Прибрано поле "ID альбому" зі сторінки */}
 
         {/* Кнопка завантаження всіх фото */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
             <div>
               <h2 className="text-xl font-bold text-gray-900">
                 Завантаження фото "До і Після"
@@ -533,12 +777,17 @@ export default function BeforeAfterPage() {
 
         {/* Відображення завантажених фото */}
         <div className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Завантажені фото
-            {loadingPhotos && (
-              <span className="ml-2 text-blue-600">(Завантаження...)</span>
-            )}
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Завантажені фото
+              {loadingPhotos && (
+                <span className="ml-2 text-blue-600">(Завантаження...)</span>
+              )}
+            </h2>
+            {/* Прибрано глобальну кнопку видалення усіх колекцій */}
+          </div>
+
+          {/* Прибрано старий список колекцій (тепер рендеримо тільки нові блоки-колекції нижче) */}
 
           {loadingPhotos ? (
             <div className="text-center py-8">
@@ -568,65 +817,164 @@ export default function BeforeAfterPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {uploadedPhotos.map((photo, index) => (
-                <div
-                  key={`${photo.id}-${index}`}
-                  className="bg-white rounded-lg shadow overflow-hidden"
-                >
-                  {/* Прев'ю фото */}
-                  <div className="aspect-w-16 aspect-h-9">
-                    <img
-                      src={photo.url}
-                      alt={photo.title}
-                      className="w-full h-48 object-cover"
-                    />
-                  </div>
+            <div className="space-y-6">
+              {collections.length > 0
+                ? collections.map((collection) => {
+                    const pairsInCollection = pairs.filter(
+                      (p) => p.collectionId === collection.id
+                    );
 
-                  {/* Інформація про фото */}
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          photo.tag === "before"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
+                    // Розкладаємо фото по рядах: верхній — before, нижній — after
+                    const beforeRow = pairsInCollection
+                      .map((p) =>
+                        p.beforePhoto
+                          ? { ...p.beforePhoto, tag: "before" }
+                          : null
+                      )
+                      .filter(Boolean);
+                    const afterRow = pairsInCollection
+                      .map((p) =>
+                        p.afterPhoto ? { ...p.afterPhoto, tag: "after" } : null
+                      )
+                      .filter(Boolean);
+
+                    return (
+                      <div
+                        key={collection.id}
+                        className="bg-white border border-gray-200 rounded-xl shadow-sm"
                       >
-                        {photo.tag}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(photo.createdAt).toLocaleDateString("uk-UA")}
-                      </span>
-                    </div>
+                        <div className="flex items-center justify-between p-4 border-b">
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            Колекція #{collection.id}
+                          </h4>
+                          <button
+                            onClick={() =>
+                              deleteSpecificCollection(collection.id)
+                            }
+                            className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                          >
+                            🗑️ Видалити колекцію
+                          </button>
+                        </div>
 
-                    <h3 className="font-medium text-gray-900 mb-1">
-                      {photo.title || photo.fileName}
-                    </h3>
+                        <div className="p-4 space-y-6">
+                          {/* Верхній ряд: До */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {beforeRow.map((photo: any, index: number) => (
+                              <div
+                                key={`before-${photo.id}-${index}`}
+                                className="bg-white rounded-lg shadow overflow-hidden"
+                              >
+                                <div className="aspect-w-16 aspect-h-9">
+                                  <img
+                                    src={photo.url}
+                                    alt={photo.title || "before"}
+                                    className="w-full h-48 object-cover"
+                                  />
+                                </div>
+                                <div className="p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                      before
+                                    </span>
+                                    {photo.createdAt && (
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(
+                                          photo.createdAt
+                                        ).toLocaleDateString("uk-UA")}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => changePhoto(photo.id)}
+                                    className="w-full bg-blue-600 text-white text-sm py-1 px-3 rounded hover:bg-blue-700"
+                                  >
+                                    Змінити фото
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
 
-                    {photo.description && (
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                        {photo.description}
-                      </p>
-                    )}
-
-                    <div className="text-xs text-gray-500 mb-3">
-                      <p>Файл: {photo.fileName}</p>
-                      <p>
-                        Розмір: {(photo.fileSize / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-
-                    {/* Кнопка видалення */}
-                    <button
-                      onClick={() => deletePhoto(photo.id)}
-                      className="w-full bg-red-600 text-white text-sm py-1 px-3 rounded hover:bg-red-700"
+                          {/* Нижній ряд: Після */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {afterRow.map((photo: any, index: number) => (
+                              <div
+                                key={`after-${photo.id}-${index}`}
+                                className="bg-white rounded-lg shadow overflow-hidden"
+                              >
+                                <div className="aspect-w-16 aspect-h-9">
+                                  <img
+                                    src={photo.url}
+                                    alt={photo.title || "after"}
+                                    className="w-full h-48 object-cover"
+                                  />
+                                </div>
+                                <div className="p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                      after
+                                    </span>
+                                    {photo.createdAt && (
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(
+                                          photo.createdAt
+                                        ).toLocaleDateString("uk-UA")}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => changePhoto(photo.id)}
+                                    className="w-full bg-blue-600 text-white text-sm py-1 px-3 rounded hover:bg-blue-700"
+                                  >
+                                    Змінити фото
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                : uploadedPhotos.map((photo, index) => (
+                    <div
+                      key={`${photo.id}-${index}`}
+                      className="bg-white rounded-lg shadow overflow-hidden"
                     >
-                      Видалити
-                    </button>
-                  </div>
-                </div>
-              ))}
+                      <div className="aspect-w-16 aspect-h-9">
+                        <img
+                          src={photo.url}
+                          alt={photo.title}
+                          className="w-full h-48 object-cover"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              photo.tag === "before"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {photo.tag}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(photo.createdAt).toLocaleDateString(
+                              "uk-UA"
+                            )}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => changePhoto(photo.id)}
+                          className="w-full bg-blue-600 text-white text-sm py-1 px-3 rounded hover:bg-blue-700"
+                        >
+                          Змінити фото
+                        </button>
+                      </div>
+                    </div>
+                  ))}
             </div>
           )}
         </div>
@@ -637,7 +985,7 @@ export default function BeforeAfterPage() {
           </h3>
           <ul className="text-blue-800 space-y-1">
             <li>• Виберіть файл для кожного слота</li>
-            <li>• Натисніть "Завантажити" для кожного фото</li>
+            {/* Прибрано інструкцію про індивідуальну кнопку завантаження */}
             <li>• Обов'язково завантажте 3 фото "До" та 3 фото "Після"</li>
             <li>• Система автоматично створить пари після завантаження</li>
             <li>

@@ -36,20 +36,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Перевіряємо авторизацію через тестовий запит до старого сервера
+      // Перевіряємо авторизацію безпечним GET-запитом до адмінського ендпоїнта
+      // (без побічних ефектів і без 400 через відсутність файлу)
       const response = await fetch(
-        "http://localhost:3002/api/v1/upload/photo",
+        "http://localhost:3002/api/v1/gallery/albums",
         {
-          method: "POST",
+          method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          body: new FormData(), // Пустий FormData для тесту
+          cache: "no-store",
         }
       );
 
-      if (response.ok || response.status === 400) {
-        // 400 означає що авторизація пройшла, але файл не передано
+      if (response.ok) {
         // Якщо токен валідний, встановлюємо користувача
         setUser({
           id: 1,
