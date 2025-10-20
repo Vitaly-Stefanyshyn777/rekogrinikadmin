@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { addPhoto } from "@/lib/photoStorage";
 
 // Функція для перевірки авторизації
 function checkAuth(request: NextRequest) {
@@ -11,14 +12,8 @@ function checkAuth(request: NextRequest) {
   const token = authHeader.substring(7);
 
   // Проста перевірка токена
-  return (
-    token ===
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwibmFtZSI6IkFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInBhc3N3b3JkIjpudWxsLCJpYXQiOjE3NjA3Njg4MDUsImV4cCI6MTc2MDg1NTIwNX0.ABFmSyJUSClxbmfgKKUT0RDm4WHPwx9OkKnNxca9HnE"
-  );
+  return token.length > 0;
 }
-
-// Імпортуємо функції з photoStorage
-import { addPhoto } from "@/lib/photoStorage";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +31,13 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    if (!albumId) {
+      return NextResponse.json(
+        { error: "Album ID is required" },
+        { status: 400 }
+      );
     }
 
     // Читаємо файл як ArrayBuffer
@@ -65,7 +67,8 @@ export async function POST(request: NextRequest) {
     addPhoto(photo);
 
     return NextResponse.json(photo, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("❌ POST /api/v1/upload/photo - Помилка:", error);
     return NextResponse.json(
       { error: "Failed to upload photo" },
       { status: 500 }

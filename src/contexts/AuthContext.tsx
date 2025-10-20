@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Перевіряємо авторизацію безпечним GET-запитом до адмінського ендпоїнта
       // (без побічних ефектів і без 400 через відсутність файлу)
       const response = await fetch(
-        "https://rekogrinikfrontbeck-production.up.railway.app/api/v1/gallery/albums",
+        "http://localhost:3002/api/v1/gallery/albums",
         {
           method: "GET",
           headers: {
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         console.log("Отримані дані:", data);
-        console.log("Токен:", data.token);
+        console.log("Токен:", data.accessToken);
 
         // Зберігаємо токен в localStorage (старий сервер повертає accessToken)
         localStorage.setItem("authToken", data.accessToken);

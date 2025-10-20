@@ -13,7 +13,17 @@ interface Photo {
   updatedAt: string;
 }
 
-const uploadedPhotos: Photo[] = [];
+// Використовуємо глобальну змінну для зберігання
+declare global {
+  var __photos: Photo[] | undefined;
+}
+
+// Ініціалізуємо глобальний масив
+if (!global.__photos) {
+  global.__photos = [];
+}
+
+const uploadedPhotos: Photo[] = global.__photos;
 
 // Функція для додавання фото
 export function addPhoto(photo: Photo) {
@@ -22,22 +32,43 @@ export function addPhoto(photo: Photo) {
 }
 
 // Функція для отримання всіх фото
-export function getAllPhotos() {
+export function getAllPhotos(): Photo[] {
   return uploadedPhotos;
 }
 
 // Функція для видалення фото за ID
-export function deletePhotoById(photoId: number) {
+export function deletePhotoById(photoId: number): Photo | null {
   const photoIndex = uploadedPhotos.findIndex((photo) => photo.id === photoId);
+
   if (photoIndex === -1) {
     return null;
   }
-  return uploadedPhotos.splice(photoIndex, 1)[0];
+
+  const deletedPhoto = uploadedPhotos.splice(photoIndex, 1)[0];
+  console.log(`🗑️ Видалено фото з ID: ${photoId}`);
+  return deletedPhoto;
+}
+
+// Функція для видалення фото за ID (повертає boolean)
+export function removePhotoById(photoId: number): boolean {
+  const photoIndex = uploadedPhotos.findIndex((photo) => photo.id === photoId);
+
+  if (photoIndex === -1) {
+    return false;
+  }
+
+  uploadedPhotos.splice(photoIndex, 1);
+  console.log(`🗑️ Видалено фото з ID: ${photoId}`);
+  return true;
 }
 
 // Функція для оновлення фото за ID
-export function updatePhotoById(photoId: number, updates: Partial<Photo>) {
+export function updatePhotoById(
+  photoId: number,
+  updates: Partial<Photo>
+): Photo | null {
   const photoIndex = uploadedPhotos.findIndex((photo) => photo.id === photoId);
+
   if (photoIndex === -1) {
     return null;
   }

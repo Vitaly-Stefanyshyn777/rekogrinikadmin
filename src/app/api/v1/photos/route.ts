@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getAllPhotos,
-  deletePhotoById,
-  updatePhotoById,
-} from "@/lib/photoStorage";
+import { getAllPhotos, deletePhotoById } from "@/lib/photoStorage";
 
 // Функція для перевірки авторизації
 function checkAuth(request: NextRequest) {
@@ -62,42 +58,5 @@ export async function DELETE(request: NextRequest) {
   return NextResponse.json({
     message: "Photo deleted successfully",
     deletedPhoto,
-  });
-}
-
-// PUT - оновити метадані фото
-export async function PUT(request: NextRequest) {
-  console.log("✏️ PUT /api/v1/photos - Оновлення фото");
-
-  if (!checkAuth(request)) {
-    console.log("❌ PUT /api/v1/photos - Unauthorized");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await request.json();
-  const { id, title, description, tag } = body;
-
-  if (!id) {
-    return NextResponse.json(
-      { error: "Photo ID is required" },
-      { status: 400 }
-    );
-  }
-
-  const updatedPhoto = updatePhotoById(id, {
-    title,
-    description,
-    tag,
-  });
-
-  if (!updatedPhoto) {
-    return NextResponse.json({ error: "Photo not found" }, { status: 404 });
-  }
-
-  console.log(`✅ PUT /api/v1/photos - Оновлено фото ${id}`);
-
-  return NextResponse.json({
-    message: "Photo updated successfully",
-    photo: updatedPhoto,
   });
 }
