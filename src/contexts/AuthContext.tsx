@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Перевіряємо авторизацію безпечним GET-запитом до адмінського ендпоїнта
       // (без побічних ефектів і без 400 через відсутність файлу)
       const response = await fetch(
-        "http://localhost:3002/api/v1/gallery/albums",
+        "https://rekogrinikfrontbeck-production.up.railway.app/api/v1/gallery/albums",
         {
           method: "GET",
           headers: {
@@ -73,13 +73,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Спроба логіну з:", email);
 
-      const response = await fetch("http://localhost:3002/api/v1/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        "https://rekogrinikfrontbeck-production.up.railway.app/api/v1/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
       console.log("Відповідь логіну:", response.status);
 

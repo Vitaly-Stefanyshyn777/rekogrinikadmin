@@ -69,7 +69,7 @@ export default function BeforeAfterPage() {
 
       // Використовуємо публічний ендпоїнт старого сервера для отримання фото альбому "До і Після"
       const timestamp = Date.now();
-      const url = `http://localhost:3002/api/v1/public/gallery/albums/before-after?t=${timestamp}`;
+      const url = `https://rekogrinikfrontbeck-production.up.railway.app/api/v1/public/gallery/albums/before-after?t=${timestamp}`;
       console.log("🔍 Запитуємо дані з URL:", url);
 
       const response = await fetch(url, {
@@ -189,7 +189,7 @@ export default function BeforeAfterPage() {
 
         // Знаходимо пару, до якої належить це фото
         const pairsResponse = await fetch(
-          `http://localhost:3002/api/v1/public/gallery/albums/before-after`,
+          `https://rekogrinikfrontbeck-production.up.railway.app/api/v1/public/gallery/albums/before-after`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -220,7 +220,7 @@ export default function BeforeAfterPage() {
           formData.append("tag", photo.tag);
 
           const uploadResponse = await fetch(
-            "http://localhost:3002/api/v1/upload/photo",
+            "https://rekogrinikfrontbeck-production.up.railway.app/api/v1/upload/photo",
             {
               method: "POST",
               headers: {
@@ -246,8 +246,8 @@ export default function BeforeAfterPage() {
         // Визначаємо, яке фото замінюємо (до або після)
         const isBeforePhoto = pair.beforePhotoId === photoId;
         const endpoint = isBeforePhoto
-          ? `http://localhost:3002/api/v1/upload/pairs/${pair.id}/before`
-          : `http://localhost:3002/api/v1/upload/pairs/${pair.id}/after`;
+          ? `https://rekogrinikfrontbeck-production.up.railway.app/api/v1/upload/pairs/${pair.id}/before`
+          : `https://rekogrinikfrontbeck-production.up.railway.app/api/v1/upload/pairs/${pair.id}/after`;
 
         // Замінюємо фото в парі
         const formData = new FormData();
@@ -299,7 +299,7 @@ export default function BeforeAfterPage() {
       );
 
       const deleteResponse = await fetch(
-        `http://localhost:3002/api/v1/gallery/albums/${albumId}/collections/${collectionId}?deletePhotos=true`,
+        `https://rekogrinikfrontbeck-production.up.railway.app/api/v1/gallery/albums/${albumId}/collections/${collectionId}?deletePhotos=true`,
         {
           method: "DELETE",
           headers: {
@@ -401,7 +401,7 @@ export default function BeforeAfterPage() {
       console.log("Відправляємо запит з токеном:", `Bearer ${authToken}`);
 
       const response = await fetch(
-        "http://localhost:3002/api/v1/upload/photo",
+        "https://rekogrinikfrontbeck-production.up.railway.app/api/v1/upload/photo",
         {
           method: "POST",
           headers: {
