@@ -66,52 +66,10 @@ export default function BeforeAfterPage() {
       const data = await response.json();
 
       // Обробляємо дані зі старого сервера
-      // Створюємо колекції по 3 фото "До" та 3 фото "Після"
+      // Створюємо масив всіх фото
       const allPhotos: Photo[] = [];
 
-      if (data.pairs && data.pairs.length > 0) {
-        // Групуємо пари по 3
-        for (let i = 0; i < data.pairs.length; i += 3) {
-          const pairGroup = data.pairs.slice(i, i + 3);
-
-          // Створюємо колекцію "До" (3 фото)
-          const beforePhotos = pairGroup.map((pair: any) => ({
-            id: pair.beforePhoto?.id || `before-${pair.id}`,
-            albumId: pair.beforePhoto?.albumId || 2,
-            url: pair.beforePhoto?.url || "",
-            title: pair.beforePhoto?.title || "До",
-            description: pair.beforePhoto?.description || "",
-            tag: "before",
-            fileName: pair.beforePhoto?.title || "До",
-            fileSize: 0,
-            mimeType: "image/jpeg",
-            createdAt: pair.beforePhoto?.createdAt || new Date().toISOString(),
-            updatedAt: pair.beforePhoto?.updatedAt || new Date().toISOString(),
-          }));
-
-          // Створюємо колекцію "Після" (3 фото)
-          const afterPhotos = pairGroup.map((pair: any) => ({
-            id: pair.afterPhoto?.id || `after-${pair.id}`,
-            albumId: pair.afterPhoto?.albumId || 2,
-            url: pair.afterPhoto?.url || "",
-            title: pair.afterPhoto?.title || "Після",
-            description: pair.afterPhoto?.description || "",
-            tag: "after",
-            fileName: pair.afterPhoto?.title || "Після",
-            fileSize: 0,
-            mimeType: "image/jpeg",
-            createdAt: pair.afterPhoto?.createdAt || new Date().toISOString(),
-            updatedAt: pair.afterPhoto?.updatedAt || new Date().toISOString(),
-          }));
-
-          // Додаємо фото "До" до загального масиву
-          allPhotos.push(...beforePhotos);
-          // Додаємо фото "Після" до загального масиву
-          allPhotos.push(...afterPhotos);
-        }
-      }
-
-      // Додаємо фото, які не входять в пари
+      // Додаємо всі фото з альбому
       if (data.photos && data.photos.length > 0) {
         data.photos.forEach((photo: any) => {
           allPhotos.push({
@@ -120,7 +78,7 @@ export default function BeforeAfterPage() {
             url: photo.url,
             title: photo.title,
             description: photo.description,
-            tag: photo.tag,
+            tag: photo.tag || "before", // Якщо tag null, встановлюємо "before"
             fileName: photo.title,
             fileSize: 0,
             mimeType: "image/jpeg",
