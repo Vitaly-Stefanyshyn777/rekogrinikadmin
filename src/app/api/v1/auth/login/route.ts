@@ -1,42 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Тимчасовий мок для авторизації
-const ADMIN_CREDENTIALS = {
-  email: "admin@example.com",
-  password: "R3k0gr1n1k@Admin#2024",
-};
-
+// Проксі до backend сервера
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
 
-    // Перевіряємо credentials
-    if (
-      email === ADMIN_CREDENTIALS.email &&
-      password === ADMIN_CREDENTIALS.password
-    ) {
-      // Генеруємо JWT токен (спрощена версія)
-      const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwibmFtZSI6IkFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInBhc3N3b3JkIjpudWxsLCJpYXQiOjE3NjA3Njg4MDUsImV4cCI6MTc2MDg1NTIwNX0.ABFmSyJUSClxbmfgKKUT0RDm4WHPwx9OkKnNxca9HnE";
+    // Перенаправляємо запит до backend сервера
+    const backendUrl =
+      "https://rekogrinikfrontbeck-production.up.railway.app/api/v1/auth/login";
 
-      const user = {
-        id: 1,
-        name: "Admin",
-        email: "admin@example.com",
-      };
+    const response = await fetch(backendUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
-      return NextResponse.json({
-        user,
-        token,
-        message: "Login successful",
-      });
-    } else {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
-    }
-  } catch {
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    const data = await response.json();
+
+    return NextResponse.json(data, {
+      status: response.status,
+      headers: {
+        "Access-Control-Allow-Origin":
+          "https://rekogrinikadmin-production.up.railway.app",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
+  } catch (error) {
+    console.error("Помилка проксі:", error);
+    return NextResponse.json(
+      { error: "Backend connection failed" },
+      {
+        status: 500,
+        headers: {
+          "Access-Control-Allow-Origin":
+            "https://rekogrinikadmin-production.up.railway.app",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      }
+    );
   }
 }

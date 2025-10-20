@@ -73,16 +73,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Спроба логіну з:", email);
 
-      const response = await fetch(
-        "https://rekogrinikfrontbeck-production.up.railway.app/api/v1/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
       console.log("Відповідь логіну:", response.status);
 
