@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
     // Додаємо CORS заголовки
     response.headers.set(
       "Access-Control-Allow-Origin",
-      "http://localhost:3002"
+      "http://rekogrinikfrontbeck-production-cf17.up.railway.app"
     );
     response.headers.set(
       "Access-Control-Allow-Methods",

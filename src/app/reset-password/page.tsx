@@ -18,7 +18,7 @@ export default function ResetPasswordPage() {
     setMessage(null);
     try {
       const res = await fetch(
-        "http://localhost:3002/api/v1/auth/request-password-reset",
+        "http://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/auth/request-password-reset",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -42,7 +42,7 @@ export default function ResetPasswordPage() {
     setMessage(null);
     try {
       const res = await fetch(
-        "http://localhost:3002/api/v1/auth/reset-password-code",
+        "http://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/auth/reset-password-code",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
