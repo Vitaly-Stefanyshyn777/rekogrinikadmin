@@ -25,7 +25,7 @@ export default function AdminHeroPage() {
       setLoading(true);
       const token = localStorage.getItem("authToken");
       const res = await fetch(
-        "http://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/public/hero",
+        "https://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/public/hero",
         {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
@@ -60,7 +60,7 @@ export default function AdminHeroPage() {
         backgroundImage: hero.backgroundImage || undefined,
       };
       const res = await fetch(
-        "http://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/hero",
+        "https://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/hero",
         {
           method,
           headers: {
@@ -86,7 +86,7 @@ export default function AdminHeroPage() {
     try {
       setSaving(true);
       const res = await fetch(
-        "http://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/hero",
+        "https://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/hero",
         {
           method: "DELETE",
           headers: {

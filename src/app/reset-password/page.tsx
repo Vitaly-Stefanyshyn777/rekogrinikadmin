@@ -18,7 +18,7 @@ export default function ResetPasswordPage() {
     setMessage(null);
     try {
       const res = await fetch(
-        "http://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/auth/request-password-reset",
+        "https://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/auth/request-password-reset",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -42,7 +42,7 @@ export default function ResetPasswordPage() {
     setMessage(null);
     try {
       const res = await fetch(
-        "http://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/auth/reset-password-code",
+        "https://rekogrinikfrontbeck-production-cf17.up.railway.app/api/v1/auth/reset-password-code",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
