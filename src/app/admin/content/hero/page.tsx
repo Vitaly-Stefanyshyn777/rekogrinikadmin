@@ -30,10 +30,13 @@ export default function AdminHeroPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
-      const res = await fetch("http://localhost:3002/api/v1/public/hero", {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+      const res = await fetch(
+        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/hero",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }
+      );
       if (!res.ok) throw new Error("Не вдалося отримати Hero");
       // Публічний ендпоїнт інколи повертає 200 без тіла
       const text = await res.text();
@@ -62,15 +65,18 @@ export default function AdminHeroPage() {
         subtitle: hero.subtitle,
         backgroundImage: hero.backgroundImage || undefined,
       };
-      const res = await fetch("http://localhost:3002/api/v1/hero", {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-        },
-        body: JSON.stringify(body),
-        credentials: "include",
-      });
+      const res = await fetch(
+        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/hero",
+        {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          body: JSON.stringify(body),
+          credentials: "include",
+        }
+      );
       if (!res.ok) throw new Error("Не вдалося зберегти Hero");
       await loadHero();
       showSuccess("Hero збережено");
@@ -99,13 +105,16 @@ export default function AdminHeroPage() {
   const performHeroDeletion = async () => {
     try {
       setSaving(true);
-      const res = await fetch("http://localhost:3002/api/v1/hero", {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-        },
-        credentials: "include",
-      });
+      const res = await fetch(
+        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/hero",
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          credentials: "include",
+        }
+      );
       if (!res.ok) throw new Error("Не вдалося видалити Hero");
       setHero({ title: "", subtitle: "", backgroundImage: "" });
       showSuccess("Hero видалено");
