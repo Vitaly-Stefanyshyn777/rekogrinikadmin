@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Toast from "@/components/Toast";
+import { useToast } from "@/hooks/useToast";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useConfirm } from "@/hooks/useConfirm";
 
 interface UploadState {
   file: File | null;
@@ -43,6 +47,8 @@ interface Pair {
 
 export default function BeforeAfterPage() {
   const { user } = useAuth();
+  const { toast, showSuccess, showError, hideToast } = useToast();
+  const { confirm, showConfirm, hideConfirm, handleConfirm } = useConfirm();
   const [beforePhotos, setBeforePhotos] = useState<UploadState[]>([
     { file: null, preview: null, uploading: false, uploaded: false },
     { file: null, preview: null, uploading: false, uploaded: false },
@@ -69,7 +75,7 @@ export default function BeforeAfterPage() {
 
       // Використовуємо публічний ендпоїнт старого сервера для отримання фото альбому "До і Після"
       const timestamp = Date.now();
-      const url = `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/gallery/albums/before-after?t=${timestamp}`;
+      const url = `http://localhost:3002/api/v1/public/gallery/albums/before-after?t=${timestamp}`;
       console.log("🔍 Запитуємо дані з URL:", url);
 
       const response = await fetch(url, {
@@ -158,7 +164,7 @@ export default function BeforeAfterPage() {
     // Знаходимо фото за ID
     const photo = uploadedPhotos.find((p) => p.id === photoId);
     if (!photo) {
-      alert("Фото не знайдено!");
+      showError("Фото не знайдено!");
       return;
     }
 
@@ -173,15 +179,21 @@ export default function BeforeAfterPage() {
 
       // Перевіряємо розмір файлу (максимум 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert("Розмір файлу не повинен перевищувати 10MB!");
+        showError("Розмір файлу не повинен перевищувати 10MB!");
         return;
       }
 
-      // Показуємо підтвердження
-      if (!confirm(`Замінити фото "${photo.title}" на нове?`)) {
-        return;
-      }
+      // Показуємо стилізоване підтвердження
+      showConfirm(
+        "Заміна фото",
+        `Замінити фото "${photo.title}" на нове?`,
+        async () => {
+          await performPhotoReplacement(photo, file);
+        }
+      );
+    };
 
+    const performPhotoReplacement = async (photo: Photo, file: File) => {
       try {
         console.log("🔄 Замінюємо фото:", photo.title);
 
@@ -189,7 +201,7 @@ export default function BeforeAfterPage() {
 
         // Знаходимо пару, до якої належить це фото
         const pairsResponse = await fetch(
-          `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/gallery/albums/before-after`,
+          `http://localhost:3002/api/v1/public/gallery/albums/before-after`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -220,7 +232,7 @@ export default function BeforeAfterPage() {
           formData.append("tag", photo.tag);
 
           const uploadResponse = await fetch(
-            "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/photo",
+            "http://localhost:3002/api/v1/upload/photo",
             {
               method: "POST",
               headers: {
@@ -239,15 +251,15 @@ export default function BeforeAfterPage() {
 
           // Оновлюємо список
           await fetchPhotos();
-          alert("Фото успішно замінено!");
+          showSuccess("Фото успішно замінено!");
           return;
         }
 
         // Визначаємо, яке фото замінюємо (до або після)
         const isBeforePhoto = pair.beforePhotoId === photoId;
         const endpoint = isBeforePhoto
-          ? `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/pairs/${pair.id}/before`
-          : `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/pairs/${pair.id}/after`;
+          ? `http://localhost:3002/api/v1/upload/pairs/${pair.id}/before`
+          : `http://localhost:3002/api/v1/upload/pairs/${pair.id}/after`;
 
         // Замінюємо фото в парі
         const formData = new FormData();
@@ -267,10 +279,10 @@ export default function BeforeAfterPage() {
 
         // Оновлюємо список
         await fetchPhotos();
-        alert("Фото успішно замінено!");
+        showSuccess("Фото успішно замінено!");
       } catch (err) {
         console.error("Помилка заміни фото:", err);
-        alert(err instanceof Error ? err.message : "Помилка заміни фото");
+        showError(err instanceof Error ? err.message : "Помилка заміни фото");
       }
     };
 
@@ -279,14 +291,21 @@ export default function BeforeAfterPage() {
 
   // Видалення конкретної колекції
   const deleteSpecificCollection = async (collectionId: number) => {
-    if (
-      !confirm(
-        `Ви впевнені, що хочете видалити колекцію #${collectionId}? Цю дію неможливо скасувати!`
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      "Видалення колекції",
+      `Ви впевнені, що хочете видалити колекцію #${collectionId}? Цю дію неможливо скасувати!`,
+      async () => {
+        await performCollectionDeletion(collectionId);
+      },
+      {
+        confirmText: "Видалити",
+        cancelText: "Скасувати",
+        type: "danger",
+      }
+    );
+  };
 
+  const performCollectionDeletion = async (collectionId: number) => {
     try {
       const token = localStorage.getItem("authToken");
 
@@ -301,7 +320,7 @@ export default function BeforeAfterPage() {
       );
 
       const deleteResponse = await fetch(
-        `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/gallery/albums/${albumId}/collections/${collectionId}?deletePhotos=true`,
+        `http://localhost:3002/api/v1/gallery/albums/${albumId}/collections/${collectionId}?deletePhotos=true`,
         {
           method: "DELETE",
           headers: {
@@ -331,10 +350,12 @@ export default function BeforeAfterPage() {
 
       await fetchPhotos();
       console.log("✅ Дані оновлено після видалення колекції");
-      alert(`Колекція #${collectionId} успішно видалена!`);
+      showSuccess(`Колекція #${collectionId} успішно видалена!`);
     } catch (err) {
       console.error("Помилка видалення колекції:", err);
-      alert(err instanceof Error ? err.message : "Помилка видалення колекції");
+      showError(
+        err instanceof Error ? err.message : "Помилка видалення колекції"
+      );
     }
   };
 
@@ -394,7 +415,7 @@ export default function BeforeAfterPage() {
       console.log("Токен з localStorage:", authToken);
 
       if (!authToken) {
-        alert("Потрібна авторизація!");
+        showError("Потрібна авторизація!");
         return null;
       }
 
@@ -406,7 +427,7 @@ export default function BeforeAfterPage() {
       console.log("Відправляємо запит з токеном:", `Bearer ${authToken}`);
 
       const response = await fetch(
-        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/photo",
+        "http://localhost:3002/api/v1/upload/photo",
         {
           method: "POST",
           headers: {
@@ -444,7 +465,7 @@ export default function BeforeAfterPage() {
     });
 
     if (allBeforeFiles.length === 0 && allAfterFiles.length === 0) {
-      alert("Спочатку виберіть файли для завантаження!");
+      showError("Спочатку виберіть файли для завантаження!");
       return;
     }
 
@@ -517,7 +538,7 @@ export default function BeforeAfterPage() {
       { file: null, preview: null, uploading: false, uploaded: false },
       { file: null, preview: null, uploading: false, uploaded: false },
     ]);
-    alert("Всі фото успішно завантажені!");
+    showSuccess("Всі фото успішно завантажені!");
   };
 
   const renderPhotoSlot = (
@@ -526,7 +547,7 @@ export default function BeforeAfterPage() {
     type: "before" | "after"
   ) => (
     <div key={index} className="bg-white rounded-lg shadow p-4">
-      <h3 className="text-lg font-medium mb-4">
+      <h3 className="text-lg font-medium mb-4 text-black">
         {type === "before" ? "До" : "Після"} {index + 1}
         {photo.uploading && (
           <span className="ml-2 text-blue-600">(Завантаження...)</span>
@@ -631,7 +652,7 @@ export default function BeforeAfterPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Фото "До" */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-2xl font-bold text-black mb-6">
               Фото &quot;До&quot; (3 обов&apos;язкові)
             </h2>
             <div className="space-y-6">
@@ -643,7 +664,7 @@ export default function BeforeAfterPage() {
 
           {/* Фото "Після" */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-2xl font-bold text-black mb-6">
               Фото &quot;Після&quot; (3 обов&apos;язкові)
             </h2>
             <div className="space-y-6">
@@ -883,6 +904,26 @@ export default function BeforeAfterPage() {
           </ul>
         </div>
       </div>
+
+      {/* Стилізовані повідомлення */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+
+      {/* Стилізовані підтвердження */}
+      <ConfirmDialog
+        isOpen={confirm.isOpen}
+        title={confirm.title}
+        message={confirm.message}
+        confirmText={confirm.confirmText}
+        cancelText={confirm.cancelText}
+        type={confirm.type}
+        onConfirm={handleConfirm}
+        onCancel={hideConfirm}
+      />
     </div>
   );
 }

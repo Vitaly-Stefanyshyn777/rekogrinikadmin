@@ -25,7 +25,7 @@ export default function FormsListPage() {
       setError(null);
       const token = localStorage.getItem("authToken");
       const res = await fetch(
-        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/form?limit=50",
+        "http://localhost:3002/api/v1/public/form?limit=50",
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           cache: "no-store",

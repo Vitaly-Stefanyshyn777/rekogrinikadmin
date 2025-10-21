@@ -29,7 +29,7 @@ export default function FormDetailsPage() {
         setLoading(true);
         setError(null);
         const res = await fetch(
-          `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/form/${id}`,
+          `http://localhost:3002/api/v1/public/form/${id}`,
           {
             cache: "no-store",
           }

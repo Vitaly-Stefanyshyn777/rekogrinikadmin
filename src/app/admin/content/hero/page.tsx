@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Toast from "@/components/Toast";
+import { useToast } from "@/hooks/useToast";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useConfirm } from "@/hooks/useConfirm";
 
 type Hero = {
   title: string;
@@ -11,6 +15,8 @@ type Hero = {
 
 export default function AdminHeroPage() {
   const { user } = useAuth();
+  const { toast, showSuccess, showError, hideToast } = useToast();
+  const { confirm, showConfirm, hideConfirm, handleConfirm } = useConfirm();
   const [hero, setHero] = useState<Hero>({
     title: "",
     subtitle: "",
@@ -24,13 +30,10 @@ export default function AdminHeroPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
-      const res = await fetch(
-        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/hero",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        }
-      );
+      const res = await fetch("http://localhost:3002/api/v1/public/hero", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error("Не вдалося отримати Hero");
       // Публічний ендпоїнт інколи повертає 200 без тіла
       const text = await res.text();
@@ -59,47 +62,55 @@ export default function AdminHeroPage() {
         subtitle: hero.subtitle,
         backgroundImage: hero.backgroundImage || undefined,
       };
-      const res = await fetch(
-        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/hero",
-        {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
-          body: JSON.stringify(body),
-          credentials: "include",
-        }
-      );
+      const res = await fetch("http://localhost:3002/api/v1/hero", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
+        body: JSON.stringify(body),
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Не вдалося зберегти Hero");
       await loadHero();
-      alert("Hero збережено");
+      showSuccess("Hero збережено");
     } catch (e: unknown) {
-      alert((e as Error).message || "Помилка збереження");
+      showError((e as Error).message || "Помилка збереження");
     } finally {
       setSaving(false);
     }
   };
 
   const deleteHero = async () => {
-    if (!confirm("Видалити Hero?")) return;
+    showConfirm(
+      "Видалення Hero",
+      "Ви впевнені, що хочете видалити Hero? Цю дію неможливо скасувати!",
+      async () => {
+        await performHeroDeletion();
+      },
+      {
+        confirmText: "Видалити",
+        cancelText: "Скасувати",
+        type: "danger",
+      }
+    );
+  };
+
+  const performHeroDeletion = async () => {
     try {
       setSaving(true);
-      const res = await fetch(
-        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/hero",
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch("http://localhost:3002/api/v1/hero", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Не вдалося видалити Hero");
       setHero({ title: "", subtitle: "", backgroundImage: "" });
-      alert("Hero видалено");
+      showSuccess("Hero видалено");
     } catch (e: unknown) {
-      alert((e as Error).message || "Помилка видалення");
+      showError((e as Error).message || "Помилка видалення");
     } finally {
       setSaving(false);
     }
@@ -183,6 +194,26 @@ export default function AdminHeroPage() {
           </div>
         )}
       </div>
+
+      {/* Стилізовані повідомлення */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+
+      {/* Стилізовані підтвердження */}
+      <ConfirmDialog
+        isOpen={confirm.isOpen}
+        title={confirm.title}
+        message={confirm.message}
+        confirmText={confirm.confirmText}
+        cancelText={confirm.cancelText}
+        type={confirm.type}
+        onConfirm={handleConfirm}
+        onCancel={hideConfirm}
+      />
     </div>
   );
 }

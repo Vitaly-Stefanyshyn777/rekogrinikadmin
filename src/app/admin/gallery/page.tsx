@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Toast from "@/components/Toast";
+import { useToast } from "@/hooks/useToast";
 
 interface UploadState {
   file: File | null;
@@ -27,6 +29,7 @@ interface Photo {
 
 export default function GalleryPage() {
   const { user } = useAuth();
+  const { toast, showSuccess, showError, hideToast } = useToast();
   const [photo, setPhoto] = useState<UploadState>({
     file: null,
     preview: null,
@@ -46,7 +49,7 @@ export default function GalleryPage() {
 
       // Використовуємо публічний ендпоїнт локального бекенду для отримання фото звичайної галереї
       const response = await fetch(
-        `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/gallery/albums/general`,
+        `http://localhost:3002/api/v1/public/gallery/albums/general`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -101,7 +104,7 @@ export default function GalleryPage() {
       const token = localStorage.getItem("authToken");
 
       const response = await fetch(
-        `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/gallery/photos/${photoId}`,
+        `http://localhost:3002/api/v1/gallery/photos/${photoId}`,
         {
           method: "DELETE",
           headers: {
@@ -116,9 +119,9 @@ export default function GalleryPage() {
 
       // Оновлюємо список після видалення
       await fetchPhotos();
-      alert("Фото успішно видалено!");
+      showSuccess("Фото успішно видалено!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Помилка видалення");
+      showError(err instanceof Error ? err.message : "Помилка видалення");
     }
   };
 
@@ -140,7 +143,7 @@ export default function GalleryPage() {
 
   const handleUpload = async () => {
     if (!photo.file) {
-      alert("Спочатку виберіть файл!");
+      showError("Спочатку виберіть файл!");
       return;
     }
 
@@ -159,11 +162,11 @@ export default function GalleryPage() {
       });
       // Оновлюємо список фото після завантаження
       await fetchPhotos();
-      alert("Фото успішно завантажено! Можете завантажити наступне.");
+      showSuccess("Фото успішно завантажено! Можете завантажити наступне.");
     } else {
       // Скидаємо стан завантаження при помилці
       setPhoto((prev) => ({ ...prev, uploading: false }));
-      alert("Помилка завантаження фото!");
+      showError("Помилка завантаження фото!");
     }
   };
 
@@ -180,7 +183,7 @@ export default function GalleryPage() {
 
     try {
       const response = await fetch(
-        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/photo",
+        "http://localhost:3002/api/v1/upload/photo",
         {
           method: "POST",
           headers: {
@@ -361,6 +364,14 @@ export default function GalleryPage() {
           </ul>
         </div>
       </div>
+
+      {/* Стилізовані повідомлення */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 }

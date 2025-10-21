@@ -6,8 +6,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Перенаправляємо запит до backend сервера
-    const backendUrl =
-      "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/auth/login";
+    const backendUrl = "http://localhost:3002/api/v1/auth/login";
 
     const response = await fetch(backendUrl, {
       method: "POST",
@@ -22,8 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data, {
       status: response.status,
       headers: {
-        "Access-Control-Allow-Origin":
-          "https://rekogrinikadmin-production.up.railway.app",
+        "Access-Control-Allow-Origin": "http://localhost:3001",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
       },
@@ -35,8 +33,7 @@ export async function POST(request: NextRequest) {
       {
         status: 500,
         headers: {
-          "Access-Control-Allow-Origin":
-            "https://rekogrinikadmin-production.up.railway.app",
+          "Access-Control-Allow-Origin": "http://localhost:3001",
           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
