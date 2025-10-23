@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Toast from "@/components/Toast";
 import { useToast } from "@/hooks/useToast";
@@ -144,7 +144,7 @@ export default function AdminHeroPage() {
                 onChange={(e) =>
                   setHero((h) => ({ ...h, title: e.target.value }))
                 }
-                className="w-full border rounded-md px-3 py-2"
+                className="w-full border rounded-md px-3 py-2 text-black placeholder:text-black"
                 placeholder="Введіть заголовок"
               />
             </div>
@@ -158,22 +158,8 @@ export default function AdminHeroPage() {
                 onChange={(e) =>
                   setHero((h) => ({ ...h, subtitle: e.target.value }))
                 }
-                className="w-full border rounded-md px-3 py-2"
+                className="w-full border rounded-md px-3 py-2 text-black placeholder:text-black"
                 placeholder="Введіть підзаголовок"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Фон (URL)
-              </label>
-              <input
-                type="text"
-                value={hero.backgroundImage || ""}
-                onChange={(e) =>
-                  setHero((h) => ({ ...h, backgroundImage: e.target.value }))
-                }
-                className="w-full border rounded-md px-3 py-2"
-                placeholder="https://..."
               />
             </div>
 
@@ -185,13 +171,7 @@ export default function AdminHeroPage() {
               >
                 Створити/Перезаписати
               </button>
-              <button
-                onClick={() => saveHero("PUT")}
-                disabled={saving}
-                className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Оновити частково
-              </button>
+
               <button
                 onClick={deleteHero}
                 disabled={saving}

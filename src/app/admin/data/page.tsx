@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Photo {
@@ -331,9 +332,11 @@ export default function DataManagementPage() {
               >
                 {/* Прев'ю фото */}
                 <div className="aspect-w-16 aspect-h-9">
-                  <img
+                  <Image
                     src={photo.url}
                     alt={photo.title}
+                    width={400}
+                    height={192}
                     className="w-full h-48 object-cover"
                   />
                 </div>
@@ -478,4 +481,3 @@ export default function DataManagementPage() {
     </div>
   );
 }
-
