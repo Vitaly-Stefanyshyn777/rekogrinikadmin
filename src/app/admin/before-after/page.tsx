@@ -140,8 +140,22 @@ export default function BeforeAfterPage() {
       });
 
       if (data.collections && data.collections.length > 0) {
-        setCollections(data.collections);
-        console.log("📁 Колекції:", data.collections.length, data.collections);
+        // Конвертуємо колекції з API формату в формат фронтенду
+        const formattedCollections = data.collections.map(
+          (collection: any) => ({
+            id: collection.key, // Використовуємо key як id
+            key: collection.key,
+            name: `Колекція ${collection.key}`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+        );
+        setCollections(formattedCollections);
+        console.log(
+          "📁 Колекції:",
+          formattedCollections.length,
+          formattedCollections
+        );
       } else {
         setCollections([]);
         console.log("📁 Колекції: 0");
@@ -149,9 +163,11 @@ export default function BeforeAfterPage() {
 
       // Зберігаємо пари для подальшого рендерингу по колекціях
       if (data.pairs && Array.isArray(data.pairs)) {
+        console.log("🔗 Пари з API:", data.pairs.length, data.pairs);
         setPairs(data.pairs);
       } else {
         setPairs([]);
+        console.log("🔗 Пари: 0");
       }
 
       console.log("✅ Стан оновлено!");
@@ -728,6 +744,12 @@ export default function BeforeAfterPage() {
                     const pairsInCollection = pairs.filter(
                       (p) => p.collectionId === collection.id
                     );
+
+                    console.log(`🔍 Колекція ${collection.key}:`, {
+                      collectionId: collection.id,
+                      pairsInCollection: pairsInCollection.length,
+                      allPairs: pairs.length,
+                    });
 
                     // Розкладаємо фото по рядах: верхній — before, нижній — after
                     const beforeRow = pairsInCollection
