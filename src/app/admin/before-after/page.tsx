@@ -142,7 +142,7 @@ export default function BeforeAfterPage() {
       if (data.collections && data.collections.length > 0) {
         // Конвертуємо колекції з API формату в формат фронтенду
         const formattedCollections = data.collections.map(
-          (collection: any) => ({
+          (collection: { key: number }) => ({
             id: collection.key, // Використовуємо key як id
             key: collection.key,
             name: `Колекція ${collection.key}`,
