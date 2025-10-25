@@ -75,6 +75,10 @@ export default function BeforeAfterPage() {
     try {
       setLoadingPhotos(true);
       const token = localStorage.getItem("authToken");
+      console.log(
+        "🔑 Токен з localStorage:",
+        token ? "Є токен" : "Немає токену"
+      );
 
       // Використовуємо публічний ендпоїнт старого сервера для отримання фото альбому "До і Після"
       const timestamp = Date.now();
@@ -84,9 +88,7 @@ export default function BeforeAfterPage() {
       const response = await fetch(url, {
         // Забороняємо кеш, щоб одразу бачити актуальні зміни після видалення/заміни
         cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        // Публічний ендпоїнт не потребує авторизації
       });
 
       if (!response.ok) {
@@ -220,12 +222,7 @@ export default function BeforeAfterPage() {
 
         // Знаходимо пару, до якої належить це фото
         const pairsResponse = await fetch(
-          `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/gallery/albums/before-after`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/public/gallery/albums/before-after`
         );
 
         if (!pairsResponse.ok) {
