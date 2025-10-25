@@ -36,18 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Перевіряємо авторизацію безпечним GET-запитом до адмінського ендпоїнта
-      // (без побічних ефектів і без 400 через відсутність файлу)
-      const response = await fetch(
-        "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/gallery/albums",
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        }
-      );
+      // Перевіряємо авторизацію безпечним GET-запитом до локального API роуту
+      const response = await fetch("/api/v1/gallery/albums", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
 
       if (response.ok) {
         // Якщо токен валідний, встановлюємо користувача

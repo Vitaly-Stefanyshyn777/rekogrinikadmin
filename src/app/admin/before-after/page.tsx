@@ -32,6 +32,7 @@ interface Photo {
 
 interface Collection {
   id: number;
+  key: string;
   name: string;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +40,7 @@ interface Collection {
 
 interface Pair {
   id: number;
+  key: string;
   beforePhoto: Photo;
   afterPhoto: Photo;
   collectionId: number;
@@ -259,8 +261,8 @@ export default function BeforeAfterPage() {
         // Визначаємо, яке фото замінюємо (до або після)
         const isBeforePhoto = pair.beforePhotoId === photoId;
         const endpoint = isBeforePhoto
-          ? `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/pairs/${pair.id}/before`
-          : `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/pairs/${pair.id}/after`;
+          ? `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/pairs/${pair.key}/before`
+          : `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/upload/pairs/${pair.key}/after`;
 
         // Замінюємо фото в парі
         const formData = new FormData();
@@ -291,12 +293,12 @@ export default function BeforeAfterPage() {
   };
 
   // Видалення конкретної колекції
-  const deleteSpecificCollection = async (collectionId: number) => {
+  const deleteSpecificCollection = async (collectionKey: string) => {
     showConfirm(
       "Видалення колекції",
-      `Ви впевнені, що хочете видалити колекцію #${collectionId}? Цю дію неможливо скасувати!`,
+      `Ви впевнені, що хочете видалити колекцію ${collectionKey}? Цю дію неможливо скасувати!`,
       async () => {
-        await performCollectionDeletion(collectionId);
+        await performCollectionDeletion(collectionKey);
       },
       {
         confirmText: "Видалити",
@@ -306,22 +308,22 @@ export default function BeforeAfterPage() {
     );
   };
 
-  const performCollectionDeletion = async (collectionId: number) => {
+  const performCollectionDeletion = async (collectionKey: string) => {
     try {
       const token = localStorage.getItem("authToken");
 
       // Optimistic update: одразу видаляємо колекцію з локального стану
       setCollections((prev) =>
-        prev.filter((collection) => collection.id !== collectionId)
+        prev.filter((collection) => collection.key !== collectionKey)
       );
       setUploadedPhotos([]);
       setLoadingPhotos(false);
       console.log(
-        `🗑️ Optimistic update: видаляємо колекцію #${collectionId} зі стану`
+        `🗑️ Optimistic update: видаляємо колекцію ${collectionKey} зі стану`
       );
 
       const deleteResponse = await fetch(
-        `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/gallery/albums/${albumId}/collections/${collectionId}?deletePhotos=true`,
+        `https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/gallery/albums/${albumId}/collections/${collectionKey}?deletePhotos=true`,
         {
           method: "DELETE",
           headers: {
@@ -333,11 +335,11 @@ export default function BeforeAfterPage() {
       if (!deleteResponse.ok) {
         // Якщо помилка, повертаємо колекцію назад
         await fetchPhotos();
-        throw new Error(`Помилка видалення колекції #${collectionId}`);
+        throw new Error(`Помилка видалення колекції ${collectionKey}`);
       }
 
       const result = await deleteResponse.json();
-      console.log(`Колекція #${collectionId} видалена:`, result);
+      console.log(`Колекція ${collectionKey} видалена:`, result);
 
       // Примусово оновлюємо список для синхронізації з сервером
       console.log("🔄 Оновлюємо дані після видалення колекції...");
@@ -351,7 +353,7 @@ export default function BeforeAfterPage() {
 
       await fetchPhotos();
       console.log("✅ Дані оновлено після видалення колекції");
-      showSuccess(`Колекція #${collectionId} успішно видалена!`);
+      showSuccess(`Колекція ${collectionKey} успішно видалена!`);
     } catch (err) {
       console.error("Помилка видалення колекції:", err);
       showError(
@@ -743,16 +745,16 @@ export default function BeforeAfterPage() {
 
                     return (
                       <div
-                        key={collection.id}
+                        key={collection.key}
                         className="bg-white border border-gray-200 rounded-xl shadow-sm"
                       >
                         <div className="flex items-center justify-between p-4 border-b">
                           <h4 className="text-lg font-semibold text-gray-900">
-                            Колекція #{collection.id}
+                            Колекція {collection.key}
                           </h4>
                           <button
                             onClick={() =>
-                              deleteSpecificCollection(collection.id)
+                              deleteSpecificCollection(collection.key)
                             }
                             className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
                           >
