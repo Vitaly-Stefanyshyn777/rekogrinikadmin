@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = "http://localhost:3002";
 
-// POST - проксувати запит до backend для завантаження фото
-export async function POST(request: NextRequest) {
-  console.log("📤 POST /api/v1/upload/photo - Проксування до backend");
+// PUT - проксувати запит до backend для заміни фото "До" в парі
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ pairId: string }> }
+) {
+  const { pairId } = await params;
+
+  console.log(
+    `🔄 PUT /api/v1/upload/pairs/${pairId}/before - Проксування до backend`
+  );
 
   try {
     const authHeader = request.headers.get("authorization");
@@ -17,10 +24,10 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
 
     // Проксуємо запит до backend
-    const backendUrl = `${BACKEND_URL}/api/v1/upload/photo`;
+    const backendUrl = `${BACKEND_URL}/api/v1/upload/pairs/${pairId}/before`;
 
     const response = await fetch(backendUrl, {
-      method: "POST",
+      method: "PUT",
       headers: {
         Authorization: authHeader,
       },
@@ -30,11 +37,11 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(
-        `❌ POST /api/v1/upload/photo - Backend error: ${response.status}`,
+        `❌ PUT /api/v1/upload/pairs/${pairId}/before - Backend error: ${response.status}`,
         errorText
       );
       return NextResponse.json(
-        { error: errorText || "Backend upload failed" },
+        { error: errorText || "Backend replacement failed" },
         { status: response.status }
       );
     }
@@ -42,17 +49,21 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     console.log(
-      `✅ POST /api/v1/upload/photo - Фото завантажено через backend`
+      `✅ PUT /api/v1/upload/pairs/${pairId}/before - Фото замінено через backend`
     );
 
     return NextResponse.json(data, {
       status: response.status,
     });
   } catch (error) {
-    console.error("❌ POST /api/v1/upload/photo - Помилка:", error);
+    console.error(
+      `❌ PUT /api/v1/upload/pairs/${pairId}/before - Помилка:`,
+      error
+    );
     return NextResponse.json(
-      { error: "Failed to upload photo to backend" },
+      { error: "Failed to replace photo in backend" },
       { status: 500 }
     );
   }
 }
+

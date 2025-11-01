@@ -1,62 +1,111 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllPhotos, deletePhotoById } from "@/lib/photoStorage";
 
-// Функція для перевірки авторизації
-function checkAuth(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return false;
-  }
-  const token = authHeader.substring(7);
-  // Тут має бути реальна перевірка JWT токена
-  return token.length > 0;
-}
+const BACKEND_URL = "http://localhost:3002";
 
-// GET - отримати всі фото
+// GET - проксувати запит до backend для отримання всіх фото
 export async function GET(request: NextRequest) {
-  console.log("🔍 GET /api/v1/photos - Отримання всіх фото");
+  console.log("🔍 GET /api/v1/photos - Проксування до backend");
 
-  if (!checkAuth(request)) {
-    console.log("❌ GET /api/v1/photos - Unauthorized");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const authHeader = request.headers.get("authorization");
 
-  const photos = getAllPhotos();
-  console.log(`✅ GET /api/v1/photos - Знайдено ${photos.length} фото`);
-  return NextResponse.json({
-    photos,
-    total: photos.length,
-  });
-}
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-// DELETE - видалити фото за ID
-export async function DELETE(request: NextRequest) {
-  console.log("🗑️ DELETE /api/v1/photos - Видалення фото");
+    const backendUrl = `${BACKEND_URL}/api/v1/photos`;
 
-  if (!checkAuth(request)) {
-    console.log("❌ DELETE /api/v1/photos - Unauthorized");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    const response = await fetch(backendUrl, {
+      method: "GET",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+    });
 
-  const { searchParams } = new URL(request.url);
-  const photoId = searchParams.get("id");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `❌ GET /api/v1/photos - Backend error: ${response.status}`,
+        errorText
+      );
+      return NextResponse.json(
+        { error: errorText || "Backend fetch failed" },
+        { status: response.status }
+      );
+    }
 
-  if (!photoId) {
+    const data = await response.json();
+
+    console.log(`✅ GET /api/v1/photos - Отримано дані з backend`);
+
+    return NextResponse.json(data, {
+      status: response.status,
+    });
+  } catch (error) {
+    console.error("❌ GET /api/v1/photos - Помилка:", error);
     return NextResponse.json(
-      { error: "Photo ID is required" },
-      { status: 400 }
+      { error: "Failed to fetch photos from backend" },
+      { status: 500 }
     );
   }
+}
 
-  const deletedPhoto = deletePhotoById(parseInt(photoId));
-  if (!deletedPhoto) {
-    return NextResponse.json({ error: "Photo not found" }, { status: 404 });
+// DELETE - проксувати запит до backend для видалення фото
+export async function DELETE(request: NextRequest) {
+  console.log("🗑️ DELETE /api/v1/photos - Проксування до backend");
+
+  try {
+    const authHeader = request.headers.get("authorization");
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const photoId = searchParams.get("id");
+
+    if (!photoId) {
+      return NextResponse.json(
+        { error: "Photo ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const backendUrl = `${BACKEND_URL}/api/v1/photos?id=${photoId}`;
+
+    const response = await fetch(backendUrl, {
+      method: "DELETE",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `❌ DELETE /api/v1/photos - Backend error: ${response.status}`,
+        errorText
+      );
+      return NextResponse.json(
+        { error: errorText || "Backend deletion failed" },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+
+    console.log(`✅ DELETE /api/v1/photos - Фото ${photoId} видалено через backend`);
+
+    return NextResponse.json(data, {
+      status: response.status,
+    });
+  } catch (error) {
+    console.error("❌ DELETE /api/v1/photos - Помилка:", error);
+    return NextResponse.json(
+      { error: "Failed to delete photo from backend" },
+      { status: 500 }
+    );
   }
-
-  console.log(`✅ DELETE /api/v1/photos - Видалено фото ${photoId}`);
-
-  return NextResponse.json({
-    message: "Photo deleted successfully",
-    deletedPhoto,
-  });
 }
