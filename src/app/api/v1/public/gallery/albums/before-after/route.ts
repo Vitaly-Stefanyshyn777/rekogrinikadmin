@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = "http://localhost:3002";
+const BACKEND_URL = "https://rekogrinikfrontbeck-production-a699.up.railway.app";
 
 // GET - проксувати запит до backend для отримання альбому "До і Після"
 export async function GET(request: NextRequest) {
