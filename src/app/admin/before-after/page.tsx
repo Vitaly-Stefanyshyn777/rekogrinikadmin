@@ -758,14 +758,29 @@ export default function BeforeAfterPage() {
                   });
 
                   // Розкладаємо фото по рядах: верхній — before, нижній — after
+                  // Використовуємо pair.id або pair.key для унікальних ключів
                   const beforeRow = pairsInCollection
-                    .map((p) =>
-                      p.beforePhoto ? { ...p.beforePhoto, tag: "before" } : null
+                    .map((p, index) =>
+                      p.beforePhoto
+                        ? {
+                            ...p.beforePhoto,
+                            tag: "before",
+                            pairId: p.id || p.key || index,
+                            pairKey: p.key || p.id || index,
+                          }
+                        : null
                     )
                     .filter(Boolean);
                   const afterRow = pairsInCollection
-                    .map((p) =>
-                      p.afterPhoto ? { ...p.afterPhoto, tag: "after" } : null
+                    .map((p, index) =>
+                      p.afterPhoto
+                        ? {
+                            ...p.afterPhoto,
+                            tag: "after",
+                            pairId: p.id || p.key || index,
+                            pairKey: p.key || p.id || index,
+                          }
+                        : null
                     )
                     .filter(Boolean);
 
@@ -795,7 +810,9 @@ export default function BeforeAfterPage() {
                             (photo) =>
                               photo && (
                                 <div
-                                  key={`before-${photo.id}`}
+                                  key={`before-${
+                                    photo.pairId || photo.pairKey
+                                  }-${photo.id}`}
                                   className="bg-white rounded-lg shadow overflow-hidden"
                                 >
                                   <div className="aspect-w-16 aspect-h-9">
@@ -838,7 +855,9 @@ export default function BeforeAfterPage() {
                             (photo) =>
                               photo && (
                                 <div
-                                  key={`after-${photo.id}`}
+                                  key={`after-${
+                                    photo.pairId || photo.pairKey
+                                  }-${photo.id}`}
                                   className="bg-white rounded-lg shadow overflow-hidden"
                                 >
                                   <div className="aspect-w-16 aspect-h-9">
