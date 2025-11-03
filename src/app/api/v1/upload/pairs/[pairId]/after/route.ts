@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const BACKEND_URL = "https://rekogrinikfrontbeck-production-a699.up.railway.app";
+import { BACKEND_URL } from "@/lib/config";
 
 // PUT - проксувати запит до backend для заміни фото "Після" в парі
 export async function PUT(

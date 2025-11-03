@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Вимикаємо дубльований рендер в dev (Strict Mode)
+  reactStrictMode: false,
   images: {
     remotePatterns: [
       {

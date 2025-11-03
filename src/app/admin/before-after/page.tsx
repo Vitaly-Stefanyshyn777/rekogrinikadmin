@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import Toast from "@/components/Toast";
@@ -69,6 +69,9 @@ export default function BeforeAfterPage() {
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [pairs, setPairs] = useState<Pair[]>([]);
+  const hasFetchedOnceRef = useRef(false);
+  const [isUploadingAll, setIsUploadingAll] = useState(false);
+  const [deletingCollectionKey, setDeletingCollectionKey] = useState<string | null>(null);
 
   // Завантаження всіх фото
   const fetchPhotos = async () => {
@@ -323,6 +326,7 @@ export default function BeforeAfterPage() {
       "Видалення колекції",
       `Ви впевнені, що хочете видалити колекцію ${collectionKey}? Цю дію неможливо скасувати!`,
       async () => {
+        setDeletingCollectionKey(collectionKey);
         await performCollectionDeletion(collectionKey);
       },
       {
@@ -342,7 +346,7 @@ export default function BeforeAfterPage() {
         prev.filter((collection) => collection.key !== collectionKey)
       );
       setUploadedPhotos([]);
-      setLoadingPhotos(false);
+      setLoadingPhotos(true);
       console.log(
         `🗑️ Optimistic update: видаляємо колекцію ${collectionKey} зі стану`
       );
@@ -374,7 +378,7 @@ export default function BeforeAfterPage() {
       setCollections([]);
 
       // Примусово оновлюємо UI
-      setLoadingPhotos(false);
+      setLoadingPhotos(true);
 
       await fetchPhotos();
       console.log("✅ Дані оновлено після видалення колекції");
@@ -385,13 +389,18 @@ export default function BeforeAfterPage() {
         err instanceof Error ? err.message : "Помилка видалення колекції"
       );
     }
+    finally {
+      setDeletingCollectionKey(null);
+    }
   };
 
   useEffect(() => {
-    if (user) {
-      fetchPhotos();
-    }
-  }, [user, albumId]);
+    // Публічний ендпоїнт не вимагає авторизації — тож тягнемо одразу
+    if (hasFetchedOnceRef.current) return; // guard від дублювання в Strict Mode
+    hasFetchedOnceRef.current = true;
+    setLoadingPhotos(true);
+    fetchPhotos();
+  }, [albumId]);
 
   // Логування змін в uploadedPhotos
   useEffect(() => {
@@ -480,6 +489,8 @@ export default function BeforeAfterPage() {
   };
 
   const uploadAllPhotos = async () => {
+    setIsUploadingAll(true);
+    setLoadingPhotos(true);
     console.log("🚀 Початок завантаження всіх фото...");
     const allBeforeFiles = beforePhotos.filter((photo) => photo.file);
     const allAfterFiles = afterPhotos.filter((photo) => photo.file);
@@ -502,6 +513,12 @@ export default function BeforeAfterPage() {
         console.log(
           `📤 Завантажуємо фото "До" ${i + 1}/${allBeforeFiles.length}`
         );
+        // блокувати вибір файлів під час завантаження конкретного слота
+        setBeforePhotos((prev) =>
+          prev.map((p, idx) =>
+            idx === i ? { ...p, uploading: true } : p
+          )
+        );
         const result = await uploadPhoto(photo.file, "before");
         if (result) {
           setBeforePhotos((prev) =>
@@ -517,6 +534,12 @@ export default function BeforeAfterPage() {
                 : p
             )
           );
+        } else {
+          setBeforePhotos((prev) =>
+            prev.map((p, idx) =>
+              idx === i ? { ...p, uploading: false } : p
+            )
+          );
         }
       }
     }
@@ -528,6 +551,11 @@ export default function BeforeAfterPage() {
       if (photo.file) {
         console.log(
           `📤 Завантажуємо фото "Після" ${i + 1}/${allAfterFiles.length}`
+        );
+        setAfterPhotos((prev) =>
+          prev.map((p, idx) =>
+            idx === i ? { ...p, uploading: true } : p
+          )
         );
         const result = await uploadPhoto(photo.file, "after");
         if (result) {
@@ -544,12 +572,19 @@ export default function BeforeAfterPage() {
                 : p
             )
           );
+        } else {
+          setAfterPhotos((prev) =>
+            prev.map((p, idx) =>
+              idx === i ? { ...p, uploading: false } : p
+            )
+          );
         }
       }
     }
 
     // Оновлюємо список фото після завантаження всіх фото
     console.log("🔄 Оновлюємо список після завантаження всіх фото...");
+    setLoadingPhotos(true);
     await fetchPhotos();
     console.log("✅ Список фото оновлено після завантаження всіх фото!");
     // Готуємо слоти для наступної колекції: очищаємо локальні стани слотів
@@ -564,6 +599,7 @@ export default function BeforeAfterPage() {
       { file: null, preview: null, uploading: false, uploaded: false },
     ]);
     showSuccess("Всі фото успішно завантажені!");
+    setIsUploadingAll(false);
   };
 
   const renderPhotoSlot = (
@@ -625,7 +661,7 @@ export default function BeforeAfterPage() {
               accept="image/*"
               onChange={(e) => handleFileChange(e, index, type)}
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              disabled={photo.uploading}
+              disabled={photo.uploading || isUploadingAll}
             />
           </div>
 
@@ -669,9 +705,34 @@ export default function BeforeAfterPage() {
             </div>
             <button
               onClick={uploadAllPhotos}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium"
+              disabled={isUploadingAll}
+              className={`flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg font-medium ${
+                isUploadingAll ? "opacity-70 cursor-not-allowed" : "hover:bg-green-700"
+              }`}
             >
-              Завантажити всі фото
+              {isUploadingAll && (
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  ></path>
+                </svg>
+              )}
+              {isUploadingAll ? "Завантаження..." : "Завантажити всі фото"}
             </button>
           </div>
         </div>
@@ -797,9 +858,38 @@ export default function BeforeAfterPage() {
                           onClick={() =>
                             deleteSpecificCollection(collection.key)
                           }
-                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                          disabled={deletingCollectionKey === collection.key}
+                          className={`flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded text-sm ${
+                            deletingCollectionKey === collection.key
+                              ? "opacity-70 cursor-not-allowed"
+                              : "hover:bg-red-700"
+                          }`}
                         >
-                          🗑️ Видалити колекцію
+                          {deletingCollectionKey === collection.key && (
+                            <svg
+                              className="animate-spin h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                              ></path>
+                            </svg>
+                          )}
+                          {deletingCollectionKey === collection.key
+                            ? "Видалення..."
+                            : "🗑️ Видалити колекцію"}
                         </button>
                       </div>
 

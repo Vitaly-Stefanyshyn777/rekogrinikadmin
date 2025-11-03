@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { BACKEND_URL } from "@/lib/config";
 
 // Проксі до backend сервера
 export async function POST(request: NextRequest) {
@@ -6,8 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Перенаправляємо запит до backend сервера
-    const backendUrl =
-      "https://rekogrinikfrontbeck-production-a699.up.railway.app/api/v1/auth/login";
+    const backendUrl = `${BACKEND_URL}/api/v1/auth/login`;
 
     const response = await fetch(backendUrl, {
       method: "POST",

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const BACKEND_URL = "https://rekogrinikfrontbeck-production-a699.up.railway.app";
+import { BACKEND_URL } from "@/lib/config";
 
 // DELETE - проксувати запит до backend для видалення колекції
 export async function DELETE(

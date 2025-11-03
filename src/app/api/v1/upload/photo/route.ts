@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const BACKEND_URL = "https://rekogrinikfrontbeck-production-a699.up.railway.app";
+import { BACKEND_URL } from "@/lib/config";
 
 // POST - проксувати запит до backend для завантаження фото
 export async function POST(request: NextRequest) {
