@@ -44,6 +44,9 @@ export default function AdminLayout({
     return null;
   }
 
+  const isSuperAdmin =
+    typeof window !== "undefined" && localStorage.getItem("isSuper") === "1";
+
   const handleLogout = async () => {
     await logout();
     router.push("/login");
@@ -65,6 +68,15 @@ export default function AdminLayout({
       href: "/admin/content",
       description: "Секції сайту (Hero тощо)",
     },
+    ...(isSuperAdmin
+      ? [
+          {
+            name: "Адміністратори",
+            href: "/admin/admins",
+            description: "Додавання та керування акаунтами адміністраторів",
+          },
+        ]
+      : []),
     {
       name: "Заявки форми",
       href: "/admin/forms",

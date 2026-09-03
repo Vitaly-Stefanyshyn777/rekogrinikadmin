@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useAuth } from "@/contexts/AuthContext";
 import Toast from "@/components/Toast";
 import { useToast } from "@/hooks/useToast";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -49,7 +48,6 @@ interface Pair {
 }
 
 export default function BeforeAfterPage() {
-  const { user } = useAuth();
   const { toast, showSuccess, showError, hideToast } = useToast();
   const { confirm, showConfirm, hideConfirm, handleConfirm } = useConfirm();
   const [beforePhotos, setBeforePhotos] = useState<UploadState[]>([
@@ -71,7 +69,9 @@ export default function BeforeAfterPage() {
   const [pairs, setPairs] = useState<Pair[]>([]);
   const hasFetchedOnceRef = useRef(false);
   const [isUploadingAll, setIsUploadingAll] = useState(false);
-  const [deletingCollectionKey, setDeletingCollectionKey] = useState<string | null>(null);
+  const [deletingCollectionKey, setDeletingCollectionKey] = useState<
+    string | null
+  >(null);
 
   // Завантаження всіх фото
   const fetchPhotos = async () => {
@@ -80,7 +80,7 @@ export default function BeforeAfterPage() {
       const token = localStorage.getItem("authToken");
       console.log(
         "🔑 Токен з localStorage:",
-        token ? "Є токен" : "Немає токену"
+        token ? "Є токен" : "Немає токену",
       );
 
       // Використовуємо локальний API роут для отримання фото альбому "До і Після"
@@ -151,7 +151,7 @@ export default function BeforeAfterPage() {
         "фото",
         "з",
         photosInPairs.size,
-        "у парах"
+        "у парах",
       );
       setUploadedPhotos(allPhotos);
 
@@ -172,13 +172,13 @@ export default function BeforeAfterPage() {
             name: `Колекція ${collection.key}`,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-          })
+          }),
         );
         setCollections(formattedCollections);
         console.log(
           "📁 Колекції:",
           formattedCollections.length,
-          formattedCollections
+          formattedCollections,
         );
       } else {
         setCollections([]);
@@ -232,7 +232,7 @@ export default function BeforeAfterPage() {
         `Замінити фото "${photo.title}" на нове?`,
         async () => {
           await performPhotoReplacement(photo, file);
-        }
+        },
       );
     };
 
@@ -244,7 +244,7 @@ export default function BeforeAfterPage() {
 
         // Знаходимо пару, до якої належить це фото
         const pairsResponse = await fetch(
-          `/api/v1/public/gallery/albums/before-after`
+          `/api/v1/public/gallery/albums/before-after`,
         );
 
         if (!pairsResponse.ok) {
@@ -254,14 +254,14 @@ export default function BeforeAfterPage() {
         const pairsData = await pairsResponse.json();
         const pair = pairsData.pairs.find(
           (p: Pair) =>
-            p.beforePhoto.id === photoId || p.afterPhoto.id === photoId
+            p.beforePhoto.id === photoId || p.afterPhoto.id === photoId,
         );
 
         if (!pair) {
           // Якщо пара не знайдена, це означає що фото не входить до колекції
           // Видаляємо це фото зі списку і не створюємо нове
           console.log(
-            "⚠️ Пара не знайдена - фото не входить до колекції, видаляємо з відображення"
+            "⚠️ Пара не знайдена - фото не входить до колекції, видаляємо з відображення",
           );
 
           // Видаляємо фото через API, якщо воно не використовується
@@ -333,7 +333,7 @@ export default function BeforeAfterPage() {
         confirmText: "Видалити",
         cancelText: "Скасувати",
         type: "danger",
-      }
+      },
     );
   };
 
@@ -343,12 +343,12 @@ export default function BeforeAfterPage() {
 
       // Optimistic update: одразу видаляємо колекцію з локального стану
       setCollections((prev) =>
-        prev.filter((collection) => collection.key !== collectionKey)
+        prev.filter((collection) => collection.key !== collectionKey),
       );
       setUploadedPhotos([]);
       setLoadingPhotos(true);
       console.log(
-        `🗑️ Optimistic update: видаляємо колекцію ${collectionKey} зі стану`
+        `🗑️ Optimistic update: видаляємо колекцію ${collectionKey} зі стану`,
       );
 
       const deleteResponse = await fetch(
@@ -358,7 +358,7 @@ export default function BeforeAfterPage() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!deleteResponse.ok) {
@@ -386,10 +386,9 @@ export default function BeforeAfterPage() {
     } catch (err) {
       console.error("Помилка видалення колекції:", err);
       showError(
-        err instanceof Error ? err.message : "Помилка видалення колекції"
+        err instanceof Error ? err.message : "Помилка видалення колекції",
       );
-    }
-    finally {
+    } finally {
       setDeletingCollectionKey(null);
     }
   };
@@ -413,14 +412,14 @@ export default function BeforeAfterPage() {
       "📁 collections змінився:",
       collections.length,
       "колекцій",
-      collections
+      collections,
     );
   }, [collections]);
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     index: number,
-    type: "before" | "after"
+    type: "before" | "after",
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -432,16 +431,16 @@ export default function BeforeAfterPage() {
         prev.map((photo, i) =>
           i === index
             ? { file, preview, uploading: false, uploaded: false }
-            : photo
-        )
+            : photo,
+        ),
       );
     } else {
       setAfterPhotos((prev) =>
         prev.map((photo, i) =>
           i === index
             ? { file, preview, uploading: false, uploaded: false }
-            : photo
-        )
+            : photo,
+        ),
       );
     }
   };
@@ -511,13 +510,11 @@ export default function BeforeAfterPage() {
       const photo = allBeforeFiles[i];
       if (photo.file) {
         console.log(
-          `📤 Завантажуємо фото "До" ${i + 1}/${allBeforeFiles.length}`
+          `📤 Завантажуємо фото "До" ${i + 1}/${allBeforeFiles.length}`,
         );
         // блокувати вибір файлів під час завантаження конкретного слота
         setBeforePhotos((prev) =>
-          prev.map((p, idx) =>
-            idx === i ? { ...p, uploading: true } : p
-          )
+          prev.map((p, idx) => (idx === i ? { ...p, uploading: true } : p)),
         );
         const result = await uploadPhoto(photo.file, "before");
         if (result) {
@@ -531,14 +528,12 @@ export default function BeforeAfterPage() {
                     uploaded: true,
                     uploadedPhoto: result,
                   }
-                : p
-            )
+                : p,
+            ),
           );
         } else {
           setBeforePhotos((prev) =>
-            prev.map((p, idx) =>
-              idx === i ? { ...p, uploading: false } : p
-            )
+            prev.map((p, idx) => (idx === i ? { ...p, uploading: false } : p)),
           );
         }
       }
@@ -550,12 +545,10 @@ export default function BeforeAfterPage() {
       const photo = allAfterFiles[i];
       if (photo.file) {
         console.log(
-          `📤 Завантажуємо фото "Після" ${i + 1}/${allAfterFiles.length}`
+          `📤 Завантажуємо фото "Після" ${i + 1}/${allAfterFiles.length}`,
         );
         setAfterPhotos((prev) =>
-          prev.map((p, idx) =>
-            idx === i ? { ...p, uploading: true } : p
-          )
+          prev.map((p, idx) => (idx === i ? { ...p, uploading: true } : p)),
         );
         const result = await uploadPhoto(photo.file, "after");
         if (result) {
@@ -569,14 +562,12 @@ export default function BeforeAfterPage() {
                     uploaded: true,
                     uploadedPhoto: result,
                   }
-                : p
-            )
+                : p,
+            ),
           );
         } else {
           setAfterPhotos((prev) =>
-            prev.map((p, idx) =>
-              idx === i ? { ...p, uploading: false } : p
-            )
+            prev.map((p, idx) => (idx === i ? { ...p, uploading: false } : p)),
           );
         }
       }
@@ -605,7 +596,7 @@ export default function BeforeAfterPage() {
   const renderPhotoSlot = (
     photo: UploadState,
     index: number,
-    type: "before" | "after"
+    type: "before" | "after",
   ) => (
     <div key={index} className="bg-white rounded-lg shadow p-4">
       <h3 className="text-lg font-medium mb-4 text-black">
@@ -630,8 +621,8 @@ export default function BeforeAfterPage() {
                           uploading: false,
                           uploaded: false,
                         }
-                      : p
-                  )
+                      : p,
+                  ),
                 );
               } else {
                 setAfterPhotos((prev) =>
@@ -643,8 +634,8 @@ export default function BeforeAfterPage() {
                           uploading: false,
                           uploaded: false,
                         }
-                      : p
-                  )
+                      : p,
+                  ),
                 );
               }
             }}
@@ -707,7 +698,9 @@ export default function BeforeAfterPage() {
               onClick={uploadAllPhotos}
               disabled={isUploadingAll}
               className={`flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg font-medium ${
-                isUploadingAll ? "opacity-70 cursor-not-allowed" : "hover:bg-green-700"
+                isUploadingAll
+                  ? "opacity-70 cursor-not-allowed"
+                  : "hover:bg-green-700"
               }`}
             >
               {isUploadingAll && (
@@ -745,7 +738,7 @@ export default function BeforeAfterPage() {
             </h2>
             <div className="space-y-6">
               {beforePhotos.map((photo, index) =>
-                renderPhotoSlot(photo, index, "before")
+                renderPhotoSlot(photo, index, "before"),
               )}
             </div>
           </div>
@@ -757,7 +750,7 @@ export default function BeforeAfterPage() {
             </h2>
             <div className="space-y-6">
               {afterPhotos.map((photo, index) =>
-                renderPhotoSlot(photo, index, "after")
+                renderPhotoSlot(photo, index, "after"),
               )}
             </div>
           </div>
@@ -809,7 +802,7 @@ export default function BeforeAfterPage() {
               {collections.length > 0 ? (
                 collections.map((collection) => {
                   const pairsInCollection = pairs.filter(
-                    (p) => p.collectionId === collection.id
+                    (p) => p.collectionId === collection.id,
                   );
 
                   console.log(`🔍 Колекція ${collection.key}:`, {
@@ -829,7 +822,7 @@ export default function BeforeAfterPage() {
                             pairId: p.id || p.key || index,
                             pairKey: p.key || p.id || index,
                           }
-                        : null
+                        : null,
                     )
                     .filter(Boolean);
                   const afterRow = pairsInCollection
@@ -841,7 +834,7 @@ export default function BeforeAfterPage() {
                             pairId: p.id || p.key || index,
                             pairKey: p.key || p.id || index,
                           }
-                        : null
+                        : null,
                     )
                     .filter(Boolean);
 
@@ -922,7 +915,7 @@ export default function BeforeAfterPage() {
                                       {photo.createdAt && (
                                         <span className="text-xs text-gray-500">
                                           {new Date(
-                                            photo.createdAt
+                                            photo.createdAt,
                                           ).toLocaleDateString("uk-UA")}
                                         </span>
                                       )}
@@ -935,7 +928,7 @@ export default function BeforeAfterPage() {
                                     </button>
                                   </div>
                                 </div>
-                              )
+                              ),
                           )}
                         </div>
 
@@ -967,7 +960,7 @@ export default function BeforeAfterPage() {
                                       {photo.createdAt && (
                                         <span className="text-xs text-gray-500">
                                           {new Date(
-                                            photo.createdAt
+                                            photo.createdAt,
                                           ).toLocaleDateString("uk-UA")}
                                         </span>
                                       )}
@@ -980,7 +973,7 @@ export default function BeforeAfterPage() {
                                     </button>
                                   </div>
                                 </div>
-                              )
+                              ),
                           )}
                         </div>
                       </div>

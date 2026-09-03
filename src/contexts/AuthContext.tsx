@@ -1,11 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { BACKEND_URL } from "@/lib/config";
 
 interface User {
   id: string;
   email: string;
   name: string;
+  role?: string;
 }
 
 interface AuthContextType {
@@ -37,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Перевіряємо авторизацію безпечним GET-запитом до локального API роуту
-      const response = await fetch("/api/v1/gallery/albums", {
+      const response = await fetch(`${BACKEND_URL}/api/v1/users`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -46,12 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (response.ok) {
-        // Якщо токен валідний, встановлюємо користувача
-        setUser({
-          id: "1",
-          name: "Admin",
-          email: "admin@example.com",
-        });
+        const storedUser = localStorage.getItem("authUser");
+        setUser(storedUser ? JSON.parse(storedUser) : null);
       } else {
         setUser(null);
         localStorage.removeItem("authToken");
@@ -86,6 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Зберігаємо токен в localStorage (старий сервер повертає accessToken)
         localStorage.setItem("authToken", data.accessToken);
+        localStorage.setItem("authUser", JSON.stringify(data.user));
+        localStorage.setItem("isSuper", data.isSuper === true ? "1" : "0");
         setUser(data.user);
         return true;
       } else {
@@ -103,6 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Видаляємо токен з localStorage
       localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser");
+      localStorage.removeItem("isSuper");
       setUser(null);
     } catch (error) {
       console.error("Помилка логауту:", error);
