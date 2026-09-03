@@ -25,11 +25,8 @@ export default function AdminsPage() {
   const [showForm, setShowForm] = useState(false);
   const [showList, setShowList] = useState(false);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "";
-  const api = (path: string) => (API_BASE ? `${API_BASE}${path}` : path);
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const api = (path: string) => `${API_BASE}${path}`;
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -133,16 +130,16 @@ export default function AdminsPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-3xl mb-4 text-gray-900 font-bold">
+    <div className="min-h-screen bg-gray-50 px-3 py-4 sm:p-6">
+      <div className="mx-auto max-w-4xl rounded-lg bg-white p-4 shadow-md sm:p-6">
+        <h1 className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl">
           Адміністратори
         </h1>
 
-        <div className="flex gap-3 mb-6">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row">
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-3 rounded-lg shadow"
+            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white shadow hover:from-blue-700 hover:to-indigo-700 sm:w-auto sm:px-5"
           >
             Додати адміністратора
           </button>
@@ -151,14 +148,14 @@ export default function AdminsPage() {
               setShowList((v) => !v);
               if (!showList) fetchAdmins();
             }}
-            className="bg-gray-100 text-gray-800 px-4 py-3 rounded-lg border border-gray-200"
+            className="w-full rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-gray-800 sm:w-auto"
           >
             {showList ? "Приховати список" : "Показати адміністраторів"}
           </button>
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="space-y-4 max-w-md mb-6">
+          <form onSubmit={handleSubmit} className="mb-6 w-full max-w-md space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Ім&apos;я
@@ -216,7 +213,7 @@ export default function AdminsPage() {
               <button
                 disabled={loading}
                 type="submit"
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-3 rounded-lg shadow"
+                className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-white shadow hover:from-blue-700 hover:to-indigo-700 sm:w-auto"
               >
                 {loading ? "Створюється..." : "Створити адміністратора"}
               </button>
@@ -238,10 +235,10 @@ export default function AdminsPage() {
               {admins.map((a) => (
                 <div
                   key={a.id}
-                  className="p-3 bg-white rounded-md shadow-sm flex justify-between items-center border border-gray-100 hover:shadow-md"
+                  className="flex flex-col gap-3 rounded-md border border-gray-100 bg-white p-3 shadow-sm hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-center gap-4">
-                    <div>
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                    <div className="min-w-0">
                       {a.avatarUrl ? (
                         <Image
                           src={a.avatarUrl}
@@ -260,14 +257,14 @@ export default function AdminsPage() {
                       <div className="font-semibold text-gray-900">
                         {a.name || a.email}
                       </div>
-                      <div className="text-sm text-gray-500">{a.email}</div>
+                      <div className="break-all text-sm text-gray-500">{a.email}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full items-center gap-2 sm:w-auto">
                     {isSuper() && (
                       <button
                         onClick={() => deleteAdmin(a.id)}
-                        className="text-sm bg-red-600 text-white px-3 py-1 rounded-md"
+                        className="w-full rounded-md bg-red-600 px-3 py-2 text-sm text-white sm:w-auto"
                       >
                         Видалити
                       </button>

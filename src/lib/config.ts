@@ -1,8 +1,10 @@
-// Центральне місце для перемикання базового домену бекенду
-// Локальна розробка:
-export const BACKEND_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3002";
+const configuredBackendUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(
+  /\/$/,
+  "",
+);
 
-// Прод (закоментовано):
-// export const BACKEND_URL =
-//   "https://rekogrinikfrontbeck-production-a699.up.railway.app";
+if (!configuredBackendUrl) {
+  throw new Error("NEXT_PUBLIC_API_BASE_URL is not configured");
+}
+
+export const BACKEND_URL = configuredBackendUrl;
